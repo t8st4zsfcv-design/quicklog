@@ -9,14 +9,14 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="Quick Log">
     <title>Quick Log</title>
-    <link rel="manifest" href="manifest.webmanifest?v=65">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=65">
-    <link rel="icon" href="icons/icon-192.png?v=65">
-    <link rel="stylesheet" href="styles.css?v=65">
+    <link rel="manifest" href="manifest.webmanifest?v=72">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=72">
+    <link rel="icon" href="icons/icon-192.png?v=72">
+    <link rel="stylesheet" href="styles.css?v=72">
   </head>
   <body>
     <main class="app-shell">
-      <section class="phone-panel">
+      <section class="phone-panel" data-active-category="main">
         <section class="workspace">
           <header class="topbar">
             <div>
@@ -43,11 +43,11 @@
               <div class="stats-grid" aria-label="Quick statistics">
                 <div class="stat-tile">
                   <span id="statToday">0</span>
-                  <small>Today</small>
+                  <small>Entries today</small>
                 </div>
                 <div class="stat-tile">
                   <span id="statTotal">0</span>
-                  <small>Total</small>
+                  <small>All entries</small>
                 </div>
                 <div class="stat-tile">
                   <span id="statCarbs">0g</span>
@@ -187,23 +187,23 @@
         <nav class="category-rail" aria-label="Categories">
           <button class="rail-button is-active" data-category-target="main" type="button" aria-label="Main" title="Main">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 16 0"/><path d="M12 12l4-4"/><path d="M7 17h10"/></svg>
-            <span class="sr-only">MAIN</span>
+            <span class="rail-label">MAIN</span>
           </button>
           <button class="rail-button" data-category-target="food" type="button" aria-label="Food" title="Food">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8"/><path d="M11 3v8"/><path d="M7 7h4"/><path d="M9 11v10"/><path d="M16 3v18"/><path d="M16 3c2 1.8 3 4 3 7v1h-3"/></svg>
-            <span class="sr-only">JEDLO</span>
+            <span class="rail-label">JEDLO</span>
           </button>
           <button class="rail-button" data-category-target="drink" type="button" aria-label="Drink" title="Drink">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l-1 7a5 5 0 0 1-10 0L6 3Z"/><path d="M12 15v6"/><path d="M8 21h8"/></svg>
-            <span class="sr-only">PITIE</span>
+            <span class="rail-label">PITIE</span>
           </button>
           <button class="rail-button" data-category-target="activity" type="button" aria-label="Activities" title="Activities">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18V8"/><path d="M19 18V8"/><path d="M3 14h4"/><path d="M17 14h4"/><path d="M7 10h10"/><path d="M7 16h10"/></svg>
-            <span class="sr-only">AKTIVITY</span>
+            <span class="rail-label">AKTIVITY</span>
           </button>
           <button class="rail-button" data-category-target="mood" type="button" aria-label="Mood" title="Mood">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.5 10h.01"/><path d="M15.5 10h.01"/><path d="M8.5 15c1.7 1.2 5.3 1.2 7 0"/></svg>
-            <span class="sr-only">NÁLADA</span>
+            <span class="rail-label">NÁLADA</span>
           </button>
         </nav>
       </section>
@@ -259,6 +259,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=65"></script>
+    <script src="app.js?v=72"></script>
   </body>
 </html>

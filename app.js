@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "65";
+const APP_VERSION = "72";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -948,6 +948,7 @@ function setupCategoryRail() {
       document.querySelectorAll("[data-category-panel]").forEach((panel) => {
         panel.classList.toggle("is-active", panel.dataset.categoryPanel === target);
       });
+      document.querySelector(".phone-panel")?.setAttribute("data-active-category", target);
       if (categoryTitle) categoryTitle.textContent = CATEGORY_LABELS[target] || "Quick Log";
     });
   });

@@ -1,11 +1,11 @@
-// DiaLog Service Worker v65
+// DiaLog Service Worker v72
 // Strategy:
 //   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
 //   - API requests (/api/*): network-only (no caching)
 //   - Other requests: network-first with cache fallback (offline support)
 
-const CACHE_NAME = "dialog-v65";
-const APP_VERSION = "65";
+const CACHE_NAME = "dialog-v72";
+const APP_VERSION = "72";
 const CORE_SHELL = [
   "/",
   "/index.html",
