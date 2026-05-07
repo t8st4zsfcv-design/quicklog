@@ -1,0 +1,14 @@
+# Service Worker must NEVER be cached aggressively, otherwise iPhone keeps using old code.
+/sw.js
+  Cache-Control: public, max-age=0, must-revalidate
+  Service-Worker-Allowed: /
+
+# Manifest needs the right MIME type so iOS recognizes it.
+/manifest.webmanifest
+  Content-Type: application/manifest+json; charset=utf-8
+  Cache-Control: public, max-age=300
+
+# Reasonable defaults for everything else.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: same-origin

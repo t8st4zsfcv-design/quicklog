@@ -1,0 +1,143 @@
+// DiaLog Service Worker v65
+// Strategy:
+//   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
+//   - API requests (/api/*): network-only (no caching)
+//   - Other requests: network-first with cache fallback (offline support)
+
+const CACHE_NAME = "dialog-v65";
+const APP_VERSION = "65";
+const CORE_SHELL = [
+  "/",
+  "/index.html",
+  `/styles.css?v=${APP_VERSION}`,
+  `/app.js?v=${APP_VERSION}`,
+  `/manifest.webmanifest?v=${APP_VERSION}`
+];
+const OPTIONAL_SHELL = [
+  "/icons/icon-192.png",
+  "/icons/icon-512.png",
+  "/icons/icon-192-maskable.png",
+  "/icons/icon-512-maskable.png",
+  "/icons/apple-touch-icon.png"
+];
+const APP_SHELL_PATHS = new Set([
+  "/",
+  "/index.html",
+  "/styles.css",
+  "/app.js",
+  "/manifest.webmanifest"
+]);
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => cacheCoreShell(cache))
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys()
+      .then((names) => Promise.all(
+        names.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name))
+      ))
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const url = new URL(event.request.url);
+
+  // Never cache API calls
+  if (url.pathname.startsWith("/api/")) {
+    event.respondWith(
+      fetch(event.request).catch(() => new Response(JSON.stringify({
+        error: "Server is unreachable. Check internet and try again.",
+        code: "network_unavailable"
+      }), {
+        status: 503,
+        headers: {
+          "content-type": "application/json; charset=utf-8",
+          "cache-control": "no-store"
+        }
+      }))
+    );
+    return;
+  }
+
+  if (event.request.method !== "GET") return;
+
+  if (isNavigationRequest(event.request)) {
+    event.respondWith(
+      caches.match("/", { ignoreSearch: true })
+        .then((cached) => cached || caches.match("/index.html", { ignoreSearch: true }))
+        .then((cached) => cached || fetch(event.request))
+        .catch(() => caches.match("/index.html", { ignoreSearch: true }))
+    );
+    return;
+  }
+
+  if (isAppShellRequest(url)) {
+    event.respondWith(
+      caches.match(event.request, { ignoreSearch: true })
+        .then((cached) => {
+          const fresh = fetch(event.request)
+            .then((response) => {
+              if (response.ok && url.origin === self.location.origin) {
+                const clone = response.clone();
+                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+              }
+              return response;
+            })
+            .catch(() => cached);
+          return cached || fresh;
+        })
+        .then((response) => response || new Response("Offline", { status: 503 }))
+    );
+    return;
+  }
+
+  // Network-first with cache fallback for non-shell assets
+  event.respondWith(
+    fetch(event.request)
+      .then((response) => {
+        // Update cache for successful same-origin responses
+        if (response.ok && url.origin === self.location.origin) {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return response;
+      })
+      .catch(() => caches.match(event.request).then((cached) => cached || new Response("Offline", { status: 503 })))
+  );
+});
+
+function isAppShellRequest(url) {
+  if (url.origin !== self.location.origin) return false;
+  if (APP_SHELL_PATHS.has(url.pathname)) return true;
+  return url.pathname.startsWith("/icons/");
+}
+
+async function cacheCoreShell(cache) {
+  for (const path of CORE_SHELL) {
+    const request = new Request(path, { cache: "reload" });
+    const response = await fetch(request);
+    if (!response.ok) throw new Error(`Failed to precache ${path}`);
+    await cache.put(request, response);
+  }
+
+  await Promise.allSettled(
+    OPTIONAL_SHELL.map(async (path) => {
+      const request = new Request(path, { cache: "reload" });
+      const response = await fetch(request);
+      if (response.ok) await cache.put(request, response);
+    })
+  );
+}
+
+function isNavigationRequest(request) {
+  if (request.mode === "navigate") return true;
+  if (request.destination === "document") return true;
+  return request.headers.get("accept")?.includes("text/html");
+}
