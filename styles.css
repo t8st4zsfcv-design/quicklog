@@ -575,7 +575,7 @@ svg {
   background: rgba(247, 244, 233, 0.1);
 }
 
-.phone-panel[data-active-category]:not([data-active-category="main"]) .action:is(:active),
+.phone-panel[data-active-category]:not([data-active-category="main"]) .action:not(.state-action):is(:active),
 .phone-panel[data-active-category]:not([data-active-category="main"]) .duration-action:is(:active) {
   background: var(--rail-active);
   color: var(--paper-ink);

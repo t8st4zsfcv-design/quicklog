@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Quick Log - timestamped life-event logger for CGM analysis
+// QuickLog - timestamped life-event logger for CGM analysis
 // ---------------------------------------------------------------------------
 
 const STORAGE_KEY = "dialog-events-v2";
@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "73";
+const APP_VERSION = "74";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -805,7 +805,7 @@ function exportCsv() {
 
 function backupJson() {
   const payload = {
-    app: "Quick Log / DiaTrack",
+    app: "QuickLog",
     schema_version: SCHEMA_VERSION,
     exported_at: nowIso(),
     events: readEvents(),
@@ -949,7 +949,7 @@ function setupCategoryRail() {
         panel.classList.toggle("is-active", panel.dataset.categoryPanel === target);
       });
       document.querySelector(".phone-panel")?.setAttribute("data-active-category", target);
-      if (categoryTitle) categoryTitle.textContent = CATEGORY_LABELS[target] || "Quick Log";
+      if (categoryTitle) categoryTitle.textContent = CATEGORY_LABELS[target] || "QuickLog";
     });
   });
 }

@@ -1,4 +1,4 @@
-# Quick Log — Cloudflare Pages deploy (Phase 1)
+# QuickLog — Cloudflare deploy
 
 ## What's in this folder
 - `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.webmanifest`, `icons/`
@@ -8,7 +8,7 @@
 ## Phase 1 deploy
 1. Sign up at https://dash.cloudflare.com (free).
 2. Workers & Pages → Create → Pages → Upload assets.
-3. Project name: `quicklog` (or anything — becomes part of your URL).
+3. Project name: `quicklog`.
 4. Drag this entire folder into the upload box.
 5. Deploy. You get a URL like `https://quicklog.pages.dev`.
 6. On iPhone: open that URL in Safari → Share → Add to Home Screen.

@@ -1,6 +1,6 @@
 {
-  "name": "Quick Log",
-  "short_name": "Quick Log",
+  "name": "QuickLog",
+  "short_name": "QuickLog",
   "description": "Quick event log for glucose analysis",
   "id": "/",
   "start_url": "/",
