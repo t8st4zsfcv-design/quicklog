@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "89";
+const APP_VERSION = "90";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -1159,6 +1159,10 @@ function setupInstantButtons() {
     setupTurboSlider(button);
   });
 
+  document.querySelectorAll(".turbo-strip").forEach((strip) => {
+    setupTurboCarousel(strip);
+  });
+
   document.querySelectorAll("[data-turbo-timer-type]").forEach((button) => {
     setupTurboTimer(button);
   });
@@ -1406,6 +1410,67 @@ function setupTurboSlider(button) {
   });
 }
 
+function setupTurboCarousel(strip) {
+  let activePointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let startScrollLeft = 0;
+  let isDragging = false;
+  let suppressClick = false;
+
+  const resetCarousel = () => {
+    activePointerId = null;
+    isDragging = false;
+    strip.classList.remove("is-dragging");
+    document.removeEventListener("pointermove", handlePointerMove);
+    document.removeEventListener("pointerup", handlePointerUp);
+    document.removeEventListener("pointercancel", resetCarousel);
+  };
+
+  const handlePointerMove = (event) => {
+    if (activePointerId !== event.pointerId) return;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (!isDragging) {
+      if (absY > 8 && absY > absX) {
+        resetCarousel();
+        return;
+      }
+      if (absX <= 8 || absX < absY) return;
+      isDragging = true;
+      suppressClick = true;
+      strip.classList.add("is-dragging");
+    }
+    event.preventDefault();
+    strip.scrollLeft = startScrollLeft - deltaX;
+  };
+
+  const handlePointerUp = (event) => {
+    if (activePointerId !== event.pointerId) return;
+    if (isDragging) event.preventDefault();
+    resetCarousel();
+  };
+
+  strip.addEventListener("pointerdown", (event) => {
+    activePointerId = event.pointerId;
+    startX = event.clientX;
+    startY = event.clientY;
+    startScrollLeft = strip.scrollLeft;
+    document.addEventListener("pointermove", handlePointerMove, { passive: false });
+    document.addEventListener("pointerup", handlePointerUp, { passive: false });
+    document.addEventListener("pointercancel", resetCarousel);
+  });
+
+  strip.addEventListener("click", (event) => {
+    if (!suppressClick) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClick = false;
+  }, true);
+}
+
 function setupTurboTimer(button) {
   const timerType = button.dataset.turboTimerType;
   button.addEventListener("click", () => {
@@ -1448,6 +1513,9 @@ function addTurboEvent(subtype, level) {
 function setupVerticalSlider(button, { levels, onCommit }) {
   let activePointerId = null;
   let currentLevel = levels[0];
+  let isSliding = false;
+  let startX = 0;
+  let startY = 0;
   button.dataset.levelCount = String(levels.length);
   button.style.setProperty("--fill-percent", "0%");
 
@@ -1462,6 +1530,7 @@ function setupVerticalSlider(button, { levels, onCommit }) {
 
   const resetSlider = () => {
     activePointerId = null;
+    isSliding = false;
     button.classList.remove("is-sliding");
     button.style.setProperty("--fill-percent", "0%");
     delete button.dataset.level;
@@ -1472,23 +1541,39 @@ function setupVerticalSlider(button, { levels, onCommit }) {
 
   const handleDocumentPointerMove = (event) => {
     if (activePointerId !== event.pointerId) return;
+    const deltaX = event.clientX - startX;
+    const deltaY = event.clientY - startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+    if (!isSliding) {
+      if (absX > 8 && absX > absY) {
+        resetSlider();
+        return;
+      }
+      if (absY <= 8 || absY < absX) return;
+      isSliding = true;
+      button.classList.add("is-sliding");
+    }
     event.preventDefault();
     setLevelFromPointer(event);
   };
 
   const handleDocumentPointerUp = (event) => {
     if (activePointerId !== event.pointerId) return;
-    event.preventDefault();
-    onCommit(currentLevel);
-    if (navigator.vibrate) navigator.vibrate(25);
+    if (isSliding) {
+      event.preventDefault();
+      onCommit(currentLevel);
+      if (navigator.vibrate) navigator.vibrate(25);
+    }
     resetSlider();
   };
 
   button.addEventListener("pointerdown", (event) => {
-    event.preventDefault();
     activePointerId = event.pointerId;
-    button.classList.add("is-sliding");
-    setLevelFromPointer(event);
+    isSliding = false;
+    startX = event.clientX;
+    startY = event.clientY;
+    currentLevel = levels[0];
     document.addEventListener("pointermove", handleDocumentPointerMove, { passive: false });
     document.addEventListener("pointerup", handleDocumentPointerUp, { passive: false });
     document.addEventListener("pointercancel", resetSlider);

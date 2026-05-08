@@ -1264,7 +1264,7 @@ textarea {
   text-transform: uppercase;
   box-shadow: none;
   scroll-snap-align: start;
-  touch-action: none;
+  touch-action: pan-x;
 }
 
 .turbo-card span {
@@ -1414,13 +1414,13 @@ textarea {
 
 @media (min-width: 700px) {
   .app-shell {
-    width: min(100%, 371px);
+    width: min(100%, 430px);
     padding: 16px 22px 18px;
   }
 }
 
 .app-shell {
-  width: min(100%, 371px);
+  width: min(100%, 430px);
 }
 
 html,
@@ -1442,7 +1442,56 @@ body::before {
 
 .app-shell.records-visible .log-panel {
   display: block;
-  width: min(100%, 371px);
+  width: min(100%, 430px);
   margin: 14px auto 0;
   border-radius: 28px;
+}
+
+@media (max-width: 699px) {
+  .app-shell,
+  .app-shell.records-visible .log-panel {
+    width: 100%;
+  }
+
+  .app-shell {
+    min-height: 100svh;
+    padding: 0;
+  }
+
+  .phone-panel,
+  .phone-panel[data-active-category="main"] {
+    min-height: 100svh;
+    border-radius: 0;
+  }
+
+  .phone-panel[data-active-category="main"] .workspace,
+  .phone-panel[data-active-category="main"] .category-panel[data-category-panel="main"],
+  .fast-home {
+    min-height: 100svh;
+  }
+
+  .phone-panel[data-active-category="main"] .category-panel[data-category-panel="main"] {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .turbo-log {
+    padding-left: 52px;
+  }
+
+  .turbo-strip {
+    grid-auto-columns: 78px;
+    gap: 8px;
+    width: calc(100% + 48px);
+    padding-right: 48px;
+  }
+
+  .turbo-card {
+    height: 232px;
+  }
+
+  .app-shell.records-visible .log-panel {
+    margin-top: 0;
+    border-radius: 0;
+  }
 }
