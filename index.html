@@ -9,10 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="QuickLog">
     <title>QuickLog</title>
-    <link rel="manifest" href="manifest.webmanifest?v=75">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=75">
-    <link rel="icon" href="icons/icon-192.png?v=75">
-    <link rel="stylesheet" href="styles.css?v=75">
+    <link rel="manifest" href="manifest.webmanifest?v=88">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=88">
+    <link rel="icon" href="icons/icon-192.png?v=88">
+    <link rel="stylesheet" href="styles.css?v=88">
   </head>
   <body>
     <main class="app-shell">
@@ -20,7 +20,7 @@
         <section class="workspace">
           <header class="topbar">
             <div>
-              <p class="eyebrow">QuickLog</p>
+              <p class="eyebrow">FastTrack</p>
               <h1 id="categoryTitle">Overall</h1>
             </div>
             <div class="top-actions" aria-label="App actions">
@@ -32,38 +32,87 @@
           </header>
 
           <section class="category-panel is-active" data-category-panel="main" aria-label="Main overview">
-            <p class="category-kicker">Overall</p>
-            <div class="main-overview">
-              <button class="action camera-action" data-ai-carbs type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>
-                <span>Camera</span>
-                <small>AI carbs estimate</small>
-              </button>
+            <div class="main-overview fast-home">
               <input id="aiPhotoInput" type="file" accept="image/*" capture="environment" hidden>
-              <div class="stats-grid" aria-label="Quick statistics">
-                <div class="stat-tile">
-                  <span id="statToday">0</span>
-                  <small>Entries today</small>
+              <section class="fast-stat-card" aria-label="Quick statistics">
+                <div class="fast-stat-card-top">
+                  <div class="fast-primary-stat">
+                    <small>Carbs today</small>
+                    <span id="statCarbs">0g</span>
+                  </div>
+                  <div class="fast-mini-stats">
+                    <div>
+                      <span id="statToday">0</span>
+                      <small>Entries</small>
+                    </div>
+                    <div>
+                      <span id="statTotal">0</span>
+                      <small>Total</small>
+                    </div>
+                  </div>
                 </div>
-                <div class="stat-tile">
-                  <span id="statTotal">0</span>
-                  <small>All entries</small>
+                <div class="fast-message-card">
+                  <p id="fastMessage">Ready. Photo, slide, or tap a Turbo Log card.</p>
+                  <div class="fast-active-stat">
+                    <span id="statActive">0</span>
+                    <small>Active</small>
+                  </div>
+                  <div class="fast-history-actions" aria-label="History actions">
+                    <button class="fast-history-button" id="fastUndoBtn" type="button" aria-label="Undo" title="Undo">↶</button>
+                    <button class="fast-history-button" id="fastRedoBtn" type="button" aria-label="Redo" title="Redo">↷</button>
+                  </div>
                 </div>
-                <div class="stat-tile">
-                  <span id="statCarbs">0g</span>
-                  <small>Carbs today</small>
+              </section>
+
+              <section class="turbo-log" aria-label="Turbo Log">
+                <h2>Turbo Log</h2>
+                <div class="turbo-strip">
+                  <button class="turbo-card" data-turbo-subtype="beer" type="button">
+                    <span>Beer</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="wine" type="button">
+                    <span>Vino</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="coffee" type="button">
+                    <span>Coffee</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="kuluri" type="button">
+                    <span>Kuluri</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="bread" type="button">
+                    <span>Bread</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="fruit" type="button">
+                    <span>Fruit</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="junk" type="button">
+                    <span>Junk</span>
+                  </button>
+                  <button class="turbo-card" data-turbo-subtype="stress" type="button">
+                    <span>Stress</span>
+                  </button>
+                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="exercise" type="button">
+                    <span>Exercise</span>
+                  </button>
+                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="nap" type="button">
+                    <span>Nap</span>
+                  </button>
+                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="party" type="button">
+                    <span>Party</span>
+                  </button>
                 </div>
-                <div class="stat-tile">
-                  <span id="statActive">0</span>
-                  <small>Active</small>
-                </div>
-              </div>
+              </section>
+
+              <nav class="fast-bottom-nav" aria-label="Quick sections">
+                <button class="fast-nav-item is-active" data-fast-nav="main" data-category-target="main" type="button" aria-label="Main Board"></button>
+                <button class="fast-nav-item" data-fast-nav="records" id="fastRecordsBtn" type="button" aria-label="Records" title="Records"></button>
+              </nav>
             </div>
           </section>
 
           <section class="category-panel" data-category-panel="food" aria-label="Food events">
             <p class="category-kicker">Food</p>
-            <div class="event-stack">
+            <div class="event-stack food-stack">
               <button class="action" data-inline-choice="carbs" type="button" aria-expanded="false">
                 <span>Carbs</span>
                 <small>rice, potato, pasta + size</small>
@@ -251,6 +300,10 @@
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 16 0"/><path d="M12 12l4-4"/><path d="M7 17h10"/></svg>
             <span class="rail-label">MAIN</span>
           </button>
+          <button class="rail-button camera-rail-button" data-ai-carbs type="button" aria-label="Camera" title="Camera">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+            <span class="rail-label">CAMERA</span>
+          </button>
           <button class="rail-button" data-category-target="food" type="button" aria-label="Food" title="Food">
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8"/><path d="M11 3v8"/><path d="M7 7h4"/><path d="M9 11v10"/><path d="M16 3v18"/><path d="M16 3c2 1.8 3 4 3 7v1h-3"/></svg>
             <span class="rail-label">JEDLO</span>
@@ -275,11 +328,6 @@
           <h2>Records</h2>
           <div class="panel-actions" aria-label="Records actions">
             <button class="record-action" id="exportBtn" type="button" aria-label="Export CSV" title="Export CSV">CSV</button>
-            <button class="record-action" id="backupBtn" type="button" aria-label="Backup JSON" title="Backup JSON">JSON</button>
-            <button class="record-action icon-only" id="tableBtn" type="button" aria-label="Hide table" title="Hide table">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/><path d="M9 5v14"/></svg>
-              <span class="sr-only">Hide table</span>
-            </button>
             <button class="text-button" id="clearBtn" type="button">Clear</button>
           </div>
         </div>
@@ -321,6 +369,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=75"></script>
+    <script src="app.js?v=88"></script>
   </body>
 </html>

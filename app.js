@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "75";
+const APP_VERSION = "88";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -139,7 +139,6 @@ const logPanel = document.querySelector("#logPanel");
 const logBody = document.querySelector("#logBody");
 const noteDialog = document.querySelector("#noteDialog");
 const noteText = document.querySelector("#noteText");
-const tableBtn = document.querySelector("#tableBtn");
 const noteBtn = document.querySelector("#noteBtn");
 const categoryTitle = document.querySelector("#categoryTitle");
 const appShell = document.querySelector(".app-shell");
@@ -151,6 +150,10 @@ const statToday = document.querySelector("#statToday");
 const statTotal = document.querySelector("#statTotal");
 const statCarbs = document.querySelector("#statCarbs");
 const statActive = document.querySelector("#statActive");
+const fastMessage = document.querySelector("#fastMessage");
+const fastUndoBtn = document.querySelector("#fastUndoBtn");
+const fastRedoBtn = document.querySelector("#fastRedoBtn");
+const fastRecordsBtn = document.querySelector("#fastRecordsBtn");
 
 const CATEGORY_LABELS = {
   main: "Overall",
@@ -605,6 +608,7 @@ function cleanupActiveForDeletedEvent(event) {
 function setStatus(message) {
   window.clearInterval(statusTypingTimer);
   statusText.textContent = message;
+  updateFastMessage(message);
   updateNetworkStatus();
 }
 
@@ -613,6 +617,7 @@ function typeStatus(message) {
   const text = String(message || "");
   let index = 0;
   statusText.textContent = "";
+  updateFastMessage(text);
   updateNetworkStatus();
   statusTypingTimer = window.setInterval(() => {
     index += 1;
@@ -622,6 +627,11 @@ function typeStatus(message) {
       statusTypingTimer = 0;
     }
   }, 18);
+}
+
+function updateFastMessage(message) {
+  if (!fastMessage) return;
+  fastMessage.textContent = String(message || "Ready.").replace(/\s+/g, " ").trim();
 }
 
 function updateNetworkStatus() {
@@ -748,6 +758,7 @@ function renderTimerButtons() {
     if (timer) timer.textContent = active ? formatClock(elapsedSeconds(active.started_at)) : "";
   });
   updateMainStats();
+  renderTurboTimers();
 }
 
 function flashLatestRow() {
@@ -826,6 +837,19 @@ function toggleTimer(timerType) {
   startTimer(timerType);
 }
 
+function undoLatestEvent() {
+  const events = readEvents();
+  const [removed] = events;
+  if (!removed) {
+    setStatus("Nothing to undo.");
+    return;
+  }
+
+  deleteEvent(removed.id);
+  setStatus(`Undo: ${displayLabel(removed)}`);
+  renderTimerButtons();
+}
+
 function exportCsv() {
   const header = [
     "timestamp_iso",
@@ -847,6 +871,7 @@ function exportCsv() {
     exportCategory(event),
     exportSubtype(event),
     exportSize(event),
+    exportIntensity(event),
     event.duration_min ?? "",
     event.carbs_g ?? event.carbs_grams ?? "",
     exportNote(event),
@@ -865,6 +890,64 @@ function exportCsv() {
   link.remove();
   URL.revokeObjectURL(url);
   setStatus(`CSV exported: ${rows.length} entries`);
+}
+
+function openRecordsWindow() {
+  const events = readEvents();
+  const rows = events.map((event) => `
+    <tr>
+      <td>${escapeHtml(exportDate(event))}</td>
+      <td>${escapeHtml(exportTime(event))}</td>
+      <td>${escapeHtml(exportCategory(event))}</td>
+      <td>${escapeHtml(exportSubtype(event))}</td>
+      <td>${escapeHtml(exportSize(event) || exportIntensity(event))}</td>
+      <td>${escapeHtml(event.carbs_g ?? event.carbs_grams ?? "")}</td>
+      <td>${escapeHtml(displayDuration(event))}</td>
+      <td>${escapeHtml(exportNote(event))}</td>
+    </tr>
+  `).join("");
+  const opened = window.open("", "quicklog-records");
+  if (!opened) {
+    setStatus("Records popup blocked.");
+    return;
+  }
+  opened.document.open();
+  opened.document.write(`<!doctype html>
+    <html lang="en">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>QuickLog Records</title>
+        <style>
+          body { margin: 0; padding: 20px; background: #f7f4ed; color: #263b38; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+          h1 { margin: 0 0 16px; font-size: 1.4rem; }
+          table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 14px; overflow: hidden; }
+          th, td { padding: 10px 12px; border-bottom: 1px solid #e6ebe8; font-size: 0.86rem; text-align: left; }
+          th { background: #405956; color: #f7f4ed; font-size: 0.72rem; text-transform: uppercase; }
+          tr:last-child td { border-bottom: 0; }
+        </style>
+      </head>
+      <body>
+        <h1>QuickLog Records</h1>
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Time</th><th>Category</th><th>Subtype</th><th>Level</th><th>Carbs</th><th>Duration</th><th>Note</th></tr>
+          </thead>
+          <tbody>${rows || `<tr><td colspan="8">No records yet.</td></tr>`}</tbody>
+        </table>
+      </body>
+    </html>`);
+  opened.document.close();
+}
+
+function setFastNavActive(target, { temporary = false } = {}) {
+  document.querySelectorAll("[data-fast-nav]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.fastNav === target);
+  });
+  appShell?.classList.toggle("records-visible", target === "records");
+  if (temporary) {
+    window.setTimeout(() => setFastNavActive("main"), 700);
+  }
 }
 
 function backupJson() {
@@ -1070,6 +1153,14 @@ function setupInstantButtons() {
         addEvent({ event_type: "carbs", category: "food", subtype, action: "instant", size: level, intensity: level });
       }
     });
+  });
+
+  document.querySelectorAll("[data-turbo-subtype]").forEach((button) => {
+    setupTurboSlider(button);
+  });
+
+  document.querySelectorAll("[data-turbo-timer-type]").forEach((button) => {
+    setupTurboTimer(button);
   });
 
   document.querySelectorAll("[data-ai-carbs]").forEach((button) => {
@@ -1307,6 +1398,103 @@ function setupCarbPortionSlider(button) {
   });
 }
 
+function setupTurboSlider(button) {
+  const subtype = normalizeSubtype(button.dataset.turboSubtype);
+  setupVerticalSlider(button, {
+    levels: PORTION_LEVELS,
+    onCommit: (level) => addTurboEvent(subtype, level)
+  });
+}
+
+function setupTurboTimer(button) {
+  const timerType = button.dataset.turboTimerType;
+  button.addEventListener("click", () => {
+    toggleTimer(timerType);
+    renderTurboTimers();
+  });
+}
+
+function renderTurboTimers() {
+  const activeDurations = readActiveDurations();
+  document.querySelectorAll("[data-turbo-timer-type]").forEach((button) => {
+    const timerType = button.dataset.turboTimerType;
+    const active = activeDurations[timerType] || null;
+    button.classList.toggle("is-active", Boolean(active));
+    button.dataset.state = active ? "ON" : "OFF";
+  });
+}
+
+function addTurboEvent(subtype, level) {
+  const category = categoryFromSubtype(subtype);
+  if (category === "food") {
+    addEvent({ event_type: "carbs", category, subtype, action: "instant", size: level, intensity: level });
+    return;
+  }
+  if (category === "drink") {
+    addEvent({ event_type: subtype, category, subtype, action: "instant", size: level, intensity: level });
+    return;
+  }
+  if (category === "mood") {
+    addEvent({ event_type: subtype, category, subtype, action: "instant", intensity: level });
+    return;
+  }
+  if (category === "activity") {
+    addEvent({ event_type: subtype, category, subtype, action: "instant", intensity: level });
+    return;
+  }
+  addEvent({ event_type: subtype, subtype, category: category || "other", action: "instant", intensity: level });
+}
+
+function setupVerticalSlider(button, { levels, onCommit }) {
+  let activePointerId = null;
+  let currentLevel = levels[0];
+  button.dataset.levelCount = String(levels.length);
+  button.style.setProperty("--fill-percent", "0%");
+
+  const setLevelFromPointer = (event) => {
+    const rect = button.getBoundingClientRect();
+    const ratio = Math.min(1, Math.max(0, (rect.bottom - event.clientY) / rect.height));
+    const index = Math.min(levels.length - 1, Math.floor(ratio * levels.length));
+    currentLevel = levels[index];
+    button.dataset.level = currentLevel;
+    button.style.setProperty("--fill-percent", `${Math.max(8, Math.round((index + 1) / levels.length * 100))}%`);
+  };
+
+  const resetSlider = () => {
+    activePointerId = null;
+    button.classList.remove("is-sliding");
+    button.style.setProperty("--fill-percent", "0%");
+    delete button.dataset.level;
+    document.removeEventListener("pointermove", handleDocumentPointerMove);
+    document.removeEventListener("pointerup", handleDocumentPointerUp);
+    document.removeEventListener("pointercancel", resetSlider);
+  };
+
+  const handleDocumentPointerMove = (event) => {
+    if (activePointerId !== event.pointerId) return;
+    event.preventDefault();
+    setLevelFromPointer(event);
+  };
+
+  const handleDocumentPointerUp = (event) => {
+    if (activePointerId !== event.pointerId) return;
+    event.preventDefault();
+    onCommit(currentLevel);
+    if (navigator.vibrate) navigator.vibrate(25);
+    resetSlider();
+  };
+
+  button.addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+    activePointerId = event.pointerId;
+    button.classList.add("is-sliding");
+    setLevelFromPointer(event);
+    document.addEventListener("pointermove", handleDocumentPointerMove, { passive: false });
+    document.addEventListener("pointerup", handleDocumentPointerUp, { passive: false });
+    document.addEventListener("pointercancel", resetSlider);
+  });
+}
+
 function setupInlineSlider(button, { levels, onCommit }) {
   const hint = button.querySelector("small")?.textContent || "hold and slide";
   let activePointerId = null;
@@ -1384,36 +1572,23 @@ aiPhotoInput?.addEventListener("change", () => {
   handleAiPhoto(aiPhotoInput.files?.[0]);
 });
 
-tableBtn?.addEventListener("click", () => {
-  const collapsed = logPanel.classList.toggle("table-collapsed");
-  appShell.classList.toggle("table-hidden", collapsed);
-  const tableLabel = tableBtn.querySelector(".sr-only");
-  const label = collapsed ? "Show table" : "Hide table";
-  if (tableLabel) tableLabel.textContent = label;
-  tableBtn.setAttribute("aria-label", label);
-  tableBtn.title = label;
+document.querySelector("#exportBtn")?.addEventListener("click", exportCsv);
+document.querySelector("[data-fast-nav='main']")?.addEventListener("click", () => {
+  setFastNavActive("main");
+});
+fastRecordsBtn?.addEventListener("click", () => {
+  setFastNavActive("records");
   renderLog();
 });
-
-document.querySelector("#exportBtn")?.addEventListener("click", exportCsv);
-document.querySelector("#backupBtn")?.addEventListener("click", backupJson);
-
 document.querySelector("#refreshBtn").addEventListener("click", refreshApp);
 
-document.querySelector("#undoBtn").addEventListener("click", () => {
-  const events = readEvents();
-  const [removed] = events;
-  if (!removed) {
-    setStatus("Nothing to undo.");
-    return;
-  }
-
-  deleteEvent(removed.id);
-  setStatus(`Undo: ${displayLabel(removed)}`);
-  renderTimerButtons();
-});
+document.querySelector("#undoBtn").addEventListener("click", undoLatestEvent);
+fastUndoBtn?.addEventListener("click", undoLatestEvent);
 
 document.querySelector("#recoverBtn")?.addEventListener("click", () => {
+  recoverLastRemovedEvent();
+});
+fastRedoBtn?.addEventListener("click", () => {
   recoverLastRemovedEvent();
 });
 
