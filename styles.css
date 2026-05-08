@@ -1343,10 +1343,10 @@ textarea {
 
 .fast-bottom-nav {
   display: grid;
-  grid-template-columns: 96px 96px;
+  grid-template-columns: 76px 76px;
   align-items: center;
   justify-content: center;
-  gap: 14px;
+  gap: 10px;
   margin-top: auto;
   margin-bottom: 62px;
   padding: 0;
@@ -1357,7 +1357,7 @@ textarea {
   display: inline-grid;
   grid-auto-flow: column;
   place-items: center;
-  gap: 8px;
+  gap: 5px;
   border: 0;
   background: #ffd0a3;
   color: #405956;
@@ -1374,11 +1374,11 @@ textarea {
 }
 
 .fast-nav-item.is-active {
-  width: 96px;
-  height: 42px;
+  width: 76px;
+  height: 36px;
   border-radius: 999px;
   background: #f9f9f7;
-  box-shadow: 0 8px 18px rgba(31, 45, 43, 0.12);
+  box-shadow: 0 6px 14px rgba(31, 45, 43, 0.1);
 }
 
 .fast-nav-item:focus-visible {
@@ -1388,22 +1388,22 @@ textarea {
 }
 
 .fast-nav-item:not(.is-active) {
-  width: 34px;
-  height: 34px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   justify-self: center;
-  opacity: 0.96;
+  opacity: 0.9;
 }
 
 .fast-nav-icon,
 .fast-nav-arrow {
-  width: 18px;
-  height: 18px;
+  width: 15px;
+  height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
   stroke-linejoin: round;
-  stroke-width: 2.4;
+  stroke-width: 2.45;
 }
 
 .fast-nav-icon rect {
@@ -1412,8 +1412,8 @@ textarea {
 }
 
 .fast-nav-arrow {
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   opacity: 0;
 }
 
@@ -1426,8 +1426,8 @@ textarea {
 }
 
 .fast-nav-item:not(.is-active) .fast-nav-icon {
-  width: 17px;
-  height: 17px;
+  width: 15px;
+  height: 15px;
 }
 
 .phone-panel[data-active-category="main"] .status-panel {
