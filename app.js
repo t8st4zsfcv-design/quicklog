@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "90";
+const APP_VERSION = "91";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:

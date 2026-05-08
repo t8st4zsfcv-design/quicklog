@@ -1343,33 +1343,91 @@ textarea {
 
 .fast-bottom-nav {
   display: grid;
-  grid-template-columns: 94px 34px;
+  grid-template-columns: 96px 96px;
   align-items: center;
   justify-content: center;
-  gap: 28px;
+  gap: 14px;
   margin-top: auto;
   margin-bottom: 62px;
   padding: 0;
 }
 
 .fast-nav-item {
+  position: relative;
+  display: inline-grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 8px;
   border: 0;
   background: #ffd0a3;
-  transition: width 160ms ease, background 160ms ease, border-radius 160ms ease;
+  color: #405956;
+  cursor: pointer;
+  outline: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    width 160ms ease,
+    height 160ms ease,
+    background 160ms ease,
+    border-radius 160ms ease,
+    box-shadow 160ms ease,
+    opacity 160ms ease;
 }
 
 .fast-nav-item.is-active {
-  width: 94px;
+  width: 96px;
   height: 42px;
   border-radius: 999px;
   background: #f9f9f7;
+  box-shadow: 0 8px 18px rgba(31, 45, 43, 0.12);
+}
+
+.fast-nav-item:focus-visible {
+  box-shadow:
+    0 0 0 2px rgba(255, 208, 163, 0.7),
+    0 8px 18px rgba(31, 45, 43, 0.12);
 }
 
 .fast-nav-item:not(.is-active) {
-  width: 29px;
-  height: 29px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   justify-self: center;
+  opacity: 0.96;
+}
+
+.fast-nav-icon,
+.fast-nav-arrow {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.fast-nav-icon rect {
+  fill: currentColor;
+  stroke: none;
+}
+
+.fast-nav-arrow {
+  width: 16px;
+  height: 16px;
+  opacity: 0;
+}
+
+.fast-nav-item.is-active .fast-nav-arrow {
+  opacity: 1;
+}
+
+.fast-nav-item:not(.is-active) .fast-nav-arrow {
+  display: none;
+}
+
+.fast-nav-item:not(.is-active) .fast-nav-icon {
+  width: 17px;
+  height: 17px;
 }
 
 .phone-panel[data-active-category="main"] .status-panel {
