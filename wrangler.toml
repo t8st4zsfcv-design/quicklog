@@ -1,5 +1,8 @@
 name = "quicklog"
 compatibility_date = "2026-05-07"
+main = "src/index.js"
 
 [assets]
 directory = "./"
+binding = "ASSETS"
+run_worker_first = ["/api/*"]

@@ -22,8 +22,18 @@
 - `Online` / `Offline` — network status, independent of sync state.
 - `DB ready` — only shows up after Phase 2 when server functions exist.
 
-## Phase 2 (next)
-Add `functions/api/estimate-carbs.js` so Camera AI works. Set `OPENAI_API_KEY` as an environment variable in the Cloudflare dashboard. App will automatically detect the function exists and use it.
+## Phase 2 deploy
+Camera AI code is present in `functions/api/estimate-carbs.js`.
+
+Before testing on iPhone, set `OPENAI_API_KEY` as an encrypted environment variable in the Cloudflare dashboard. Optional: set `OPENAI_MODEL`, otherwise the function uses `gpt-4o-mini`.
+
+Do not use Pages Direct Upload for this phase; Cloudflare Pages Functions need Git integration or Wrangler deploy.
+
+This folder supports both deploy shapes:
+- Cloudflare Pages Functions via `functions/api/*`
+- Cloudflare Workers Static Assets via `src/index.js` and `wrangler.toml`
+
+`/api/events` intentionally keeps the iPhone as the primary data store. It exists so the current frontend can leave `iPhone only` mode and enable Camera AI without adding server-side health data storage.
 
 ## Local development on the Mac (still works)
 The original `server.mjs` is kept outside this deploy folder. You can still run it locally for testing:
