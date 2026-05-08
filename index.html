@@ -9,10 +9,10 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="QuickLog">
     <title>QuickLog</title>
-    <link rel="manifest" href="manifest.webmanifest?v=74">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=74">
-    <link rel="icon" href="icons/icon-192.png?v=74">
-    <link rel="stylesheet" href="styles.css?v=74">
+    <link rel="manifest" href="manifest.webmanifest?v=75">
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=75">
+    <link rel="icon" href="icons/icon-192.png?v=75">
+    <link rel="stylesheet" href="styles.css?v=75">
   </head>
   <body>
     <main class="app-shell">
@@ -66,31 +66,43 @@
             <div class="event-stack">
               <button class="action" data-inline-choice="carbs" type="button" aria-expanded="false">
                 <span>Carbs</span>
-                <small>rice, potatoes, pasta + size</small>
+                <small>rice, potato, pasta + size</small>
               </button>
               <div class="inline-choices" id="carbsInlineChoices" hidden>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="Rice" type="button">
+                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="rice" type="button">
                   <span>Rice</span>
-                  <small>slide S / M / L</small>
+                  <small>slide S / M / L / XL</small>
                 </button>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="Potatoes" type="button">
-                  <span>Potatoes</span>
-                  <small>slide S / M / L</small>
+                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="potato" type="button">
+                  <span>Potato</span>
+                  <small>slide S / M / L / XL</small>
                 </button>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="Pasta" type="button">
+                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="pasta" type="button">
                   <span>Pasta</span>
-                  <small>slide S / M / L</small>
+                  <small>slide S / M / L / XL</small>
                 </button>
               </div>
-              <button class="action state-action" data-carb-portion-subtype="Bread" type="button">
+              <button class="action state-action" data-carb-portion-subtype="bread" type="button">
                 <span>Bread</span>
                 <small>hold and slide for S / M / L / XL</small>
               </button>
-              <button class="action state-action" data-carb-portion-subtype="Kuluri" type="button">
+              <button class="action state-action" data-carb-portion-subtype="kuluri" type="button">
                 <span>Kuluri</span>
                 <small>hold and slide for S / M / L / XL</small>
               </button>
-              <button class="action state-action" data-size-type="junk_food" type="button">
+              <button class="action state-action" data-carb-portion-subtype="sweets" type="button">
+                <span>Sweets</span>
+                <small>hold and slide for S / M / L / XL</small>
+              </button>
+              <button class="action state-action" data-carb-portion-subtype="snack" type="button">
+                <span>Snack</span>
+                <small>hold and slide for S / M / L / XL</small>
+              </button>
+              <button class="action state-action" data-carb-portion-subtype="fruit" type="button">
+                <span>Fruit</span>
+                <small>hold and slide for S / M / L / XL</small>
+              </button>
+              <button class="action state-action" data-carb-portion-subtype="junk" type="button">
                 <span>Junk food</span>
                 <small>hold and slide for S / M / L / XL</small>
               </button>
@@ -108,8 +120,20 @@
                 <span>Wine</span>
                 <small>instant</small>
               </button>
+              <button class="action" data-instant-type="spirits" type="button">
+                <span>Spirits</span>
+                <small>instant</small>
+              </button>
               <button class="action" data-instant-type="coffee" type="button">
                 <span>Coffee</span>
+                <small>instant</small>
+              </button>
+              <button class="action" data-instant-type="soda" type="button">
+                <span>Soda</span>
+                <small>instant</small>
+              </button>
+              <button class="action" data-instant-type="juice" type="button">
+                <span>Juice</span>
                 <small>instant</small>
               </button>
               <button class="action" data-instant-type="protein" type="button">
@@ -127,8 +151,8 @@
                 <strong>▶ START</strong>
                 <small></small>
               </button>
-              <button class="duration-action" data-timer-type="activity" data-label="Activity" type="button">
-                <span>Activity</span>
+              <button class="duration-action" data-timer-type="walk" data-label="Walk" type="button">
+                <span>Walk</span>
                 <strong>▶ START</strong>
                 <small></small>
               </button>
@@ -139,6 +163,36 @@
               </button>
               <button class="duration-action party-mini" data-timer-type="party" data-label="Party" type="button">
                 <span>Party</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="sex" data-label="Sex" type="button">
+                <span>Sex</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="travel" data-label="Travel" type="button">
+                <span>Travel</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="drugs" data-label="Drugs" type="button">
+                <span>Drugs</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="sleep_good" data-label="Good sleep" type="button">
+                <span>Sleep good</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="sleep_bad" data-label="Bad sleep" type="button">
+                <span>Sleep bad</span>
+                <strong>▶ START</strong>
+                <small></small>
+              </button>
+              <button class="duration-action" data-timer-type="sleep_short" data-label="Short sleep" type="button">
+                <span>Sleep short</span>
                 <strong>▶ START</strong>
                 <small></small>
               </button>
@@ -158,6 +212,14 @@
               </button>
               <button class="action state-action" data-intensity-type="nervousness" type="button">
                 <span>Nervousness</span>
+                <small>hold and slide for S / M / L</small>
+              </button>
+              <button class="action state-action" data-intensity-type="happy" type="button">
+                <span>Happy</span>
+                <small>hold and slide for S / M / L</small>
+              </button>
+              <button class="action state-action" data-intensity-type="sick" type="button">
+                <span>Sick</span>
                 <small>hold and slide for S / M / L</small>
               </button>
             </div>
@@ -259,6 +321,6 @@
       </form>
     </dialog>
 
-    <script src="app.js?v=74"></script>
+    <script src="app.js?v=75"></script>
   </body>
 </html>

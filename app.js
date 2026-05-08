@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "74";
+const APP_VERSION = "75";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -22,9 +22,9 @@ const APP_VERSION = "74";
 // - everything else (localStorage, CSV export, offline) keeps working
 let serverFeaturesUnavailable = false;
 
-const DURATION_TYPES = new Set(["exercise", "activity", "nap"]);
-const TIMER_TYPES = new Set(["exercise", "activity", "nap", "party"]);
-const STATE_TYPES = new Set(["stress", "frustration", "nervousness"]);
+const DURATION_TYPES = new Set(["exercise", "walk", "nap", "party", "sex", "travel", "drugs", "sleep_good", "sleep_bad", "sleep_short"]);
+const TIMER_TYPES = new Set([...DURATION_TYPES]);
+const STATE_TYPES = new Set(["stress", "frustration", "nervousness", "happy", "sick"]);
 const MOOD_LEVELS = ["S", "M", "L"];
 const PORTION_LEVELS = ["S", "M", "L", "XL"];
 const LEVEL_LABELS = {
@@ -35,44 +35,101 @@ const LEVEL_LABELS = {
 };
 
 const EVENT_CATEGORIES = {
-  protein: "drink",
   carbs: "food",
-  junk_food: "food",
+  food: "food",
+  bread: "food",
+  rice: "food",
+  pasta: "food",
+  potato: "food",
+  kuluri: "food",
+  sweets: "food",
+  snack: "food",
+  fruit: "food",
+  junk: "food",
+  photo: "food",
   beer: "drink",
   wine: "drink",
+  spirits: "drink",
   coffee: "drink",
+  soda: "drink",
+  juice: "drink",
+  protein: "drink",
   exercise: "activity",
   activity: "activity",
+  walk: "activity",
   nap: "activity",
   party: "activity",
+  sex: "activity",
+  travel: "activity",
+  drugs: "activity",
   stress: "mood",
   frustration: "mood",
   nervousness: "mood",
-  anxiety: "mood",
-  well_being: "mood",
-  sleep: "activity",
+  happy: "mood",
+  sick: "mood",
+  sleep_good: "sleep",
+  sleep_bad: "sleep",
+  sleep_short: "sleep",
+  sleep: "sleep",
   note: "note"
 };
 
 const LABELS = {
   exercise: "Exercise",
   activity: "Activity",
+  walk: "Walk",
   nap: "Nap",
   party: "Party",
+  sex: "Sex",
+  travel: "Travel",
+  drugs: "Drugs",
   beer: "Beer",
   wine: "Wine",
+  spirits: "Spirits",
   coffee: "Coffee",
+  soda: "Soda",
+  juice: "Juice",
   protein: "Protein",
-  carbs: "Carbs",
-  junk_food: "Junk food",
+  carbs: "Food",
+  food: "Food",
+  bread: "Bread",
+  rice: "Rice",
+  pasta: "Pasta",
+  potato: "Potato",
+  kuluri: "Kuluri",
+  sweets: "Sweets",
+  snack: "Snack",
+  fruit: "Fruit",
+  junk: "Junk food",
+  photo: "Photo food",
   stress: "Stress",
   frustration: "Frustration",
   nervousness: "Nervousness",
-  anxiety: "Nervousness",
-  well_being: "Well-being",
+  happy: "Happy",
+  sick: "Sick",
   note: "Note",
-  sleep: "Sleep",
+  sleep_good: "Good sleep",
+  sleep_bad: "Bad sleep",
+  sleep_short: "Short sleep",
   food: "Food"
+};
+
+const SUBTYPE_ALIASES = {
+  potatoes: "potato",
+  junk_food: "junk",
+  "junk food": "junk",
+  "ai estimate": "photo",
+  "protein shake": "protein"
+};
+
+const INTENSITY_EXPORT = {
+  S: "low",
+  M: "med",
+  L: "high",
+  low: "low",
+  med: "med",
+  medium: "med",
+  high: "high"
 };
 
 const statusText = document.querySelector("#statusText");
@@ -106,11 +163,7 @@ const CATEGORY_LABELS = {
 const CHOICES = {
   carbs: {
     title: "Carbs",
-    items: ["Rice", "Potatoes", "Pasta"]
-  },
-  junk_food: {
-    title: "Junk food size",
-    items: PORTION_LEVELS
+    items: ["Rice", "Potato", "Pasta"]
   }
 };
 
@@ -412,26 +465,40 @@ function makeEvent({
   event_type,
   action = "instant",
   intensity = null,
+  size = null,
+  subtype = null,
+  category = null,
   note = null,
   timestamp = null,
   duration_min = null,
   timestamp_start = null,
   timestamp_end = null,
   carbs_grams = null,
+  carbs_g = null,
+  source = "manual",
   ai_estimate = null
 }) {
+  const normalizedSubtype = normalizeSubtype(subtype || subtypeFromEventType(event_type, note));
+  const normalizedCategory = category || EVENT_CATEGORIES[event_type] || categoryFromSubtype(normalizedSubtype);
+  const normalizedSize = size || (["food", "drink"].includes(normalizedCategory) ? intensity : null);
+  const normalizedCarbs = carbs_g ?? carbs_grams ?? null;
   return {
     id: makeId(),
     schema_version: SCHEMA_VERSION,
     timestamp: timestamp || timestamp_start || nowIso(),
     timestamp_start: timestamp_start || timestamp || nowIso(),
     timestamp_end: timestamp_end || null,
+    category: normalizedCategory,
     event_type,
+    subtype: normalizedSubtype,
     action,
     intensity: intensity ?? null,
+    size: normalizedSize ?? null,
     duration_min: duration_min ?? null,
     note: note || null,
-    carbs_grams: carbs_grams ?? null,
+    carbs_grams: normalizedCarbs,
+    carbs_g: normalizedCarbs,
+    source,
     photo_url: null,
     ai_estimate: ai_estimate ?? null
   };
@@ -452,18 +519,18 @@ function eventAddedMessage(event) {
   const details = [];
   let name = displayLabel(event);
 
-  if (event.event_type === "carbs" && event.note && event.note !== "AI estimate") {
-    name = event.note;
+  if (event.subtype && event.event_type === "carbs") {
+    name = LABELS[event.subtype] || titleCase(event.subtype);
   }
 
-  if (["carbs", "junk_food"].includes(event.event_type) && event.intensity) {
-    details.push(`veľkosť ${event.intensity}`);
-  } else if ((STATE_TYPES.has(event.event_type) || event.event_type === "anxiety") && event.intensity) {
+  if (exportSize(event)) {
+    details.push(`veľkosť ${exportSize(event)}`);
+  } else if (exportIntensity(event)) {
     details.push(`intenzita ${event.intensity}`);
   }
 
-  if (event.carbs_grams != null) {
-    details.push(`${event.carbs_grams} g sacharidov`);
+  if ((event.carbs_g ?? event.carbs_grams) != null) {
+    details.push(`${event.carbs_g ?? event.carbs_grams} g sacharidov`);
   }
 
   if (event.duration_min != null && event.duration_min !== "") {
@@ -584,14 +651,18 @@ function plainLabel(eventType) {
 }
 
 function displayLabel(event) {
-  const label = LABELS[event.event_type] || event.event_type;
+  const subtype = event.subtype || normalizeSubtype(subtypeFromEventType(event.event_type, event.note));
+  const category = exportCategory(event);
+  const label = category === "food"
+    ? (LABELS[subtype] || titleCase(subtype || event.event_type))
+    : (LABELS[event.event_type] || LABELS[subtype] || titleCase(subtype || event.event_type));
   if (event.action === "start") return `${label} start`;
   if (event.action === "stop") return `${label} stop`;
   return label;
 }
 
 function displayIntensity(event) {
-  if (!STATE_TYPES.has(event.event_type) && event.event_type !== "anxiety") return "";
+  if (exportCategory(event) !== "mood") return "";
   return normalizeMoodLevel(event.intensity);
 }
 
@@ -610,10 +681,9 @@ function displayNote(event) {
   const parts = [];
   const intensity = displayIntensity(event);
   if (intensity) parts.push(intensity);
-  if (event.event_type === "junk_food" && event.intensity) parts.push(`size ${event.intensity}`);
-  if (event.event_type === "carbs" && event.intensity) parts.push(`size ${event.intensity}`);
-  if (event.carbs_grams != null) parts.push(`${event.carbs_grams}g carbs`);
-  if (event.note) parts.push(event.note);
+  if (exportSize(event)) parts.push(`size ${exportSize(event)}`);
+  if ((event.carbs_g ?? event.carbs_grams) != null) parts.push(`${event.carbs_g ?? event.carbs_grams}g carbs`);
+  if (event.note && event.note !== "AI estimate") parts.push(event.note);
   if (event.ai_estimate?.short_note) parts.push(event.ai_estimate.short_note);
   return parts.join(" ");
 }
@@ -654,7 +724,7 @@ function updateMainStats() {
   const today = exportDate({ timestamp: nowIso() });
   const todayEvents = events.filter((event) => exportDate(event) === today);
   const carbsToday = todayEvents.reduce((total, event) => {
-    const grams = Number(event.carbs_grams);
+    const grams = Number(event.carbs_g ?? event.carbs_grams);
     return Number.isFinite(grams) ? total + grams : total;
   }, 0);
   const activeCount = Object.keys(readActiveDurations()).length;
@@ -688,7 +758,12 @@ function flashLatestRow() {
 }
 
 function startTimer(timerType) {
-  const event = addEvent({ event_type: timerType, action: "start" });
+  const event = addEvent({
+    event_type: timerType,
+    category: EVENT_CATEGORIES[timerType] || categoryFromSubtype(timerType),
+    subtype: subtypeFromEventType(timerType),
+    action: "start"
+  });
   const activeDurations = readActiveDurations();
   activeDurations[timerType] = {
     event_id: event.id,
@@ -710,6 +785,8 @@ function stopTimer(timerType) {
   const durationMin = minutesBetween(active.started_at, stoppedAt);
   const stopEvent = addEvent({
     event_type: timerType,
+    category: EVENT_CATEGORIES[timerType] || categoryFromSubtype(timerType),
+    subtype: subtypeFromEventType(timerType),
     action: "stop",
     timestamp: stoppedAt,
     timestamp_start: active.started_at,
@@ -751,42 +828,29 @@ function toggleTimer(timerType) {
 
 function exportCsv() {
   const header = [
-    "id",
+    "timestamp_iso",
     "date",
     "time",
-    "timestamp",
-    "timezone_offset",
-    "timestamp_start",
-    "timestamp_end",
     "category",
-    "event_type",
     "subtype",
-    "action",
-    "intensity",
     "size",
-    "carbs_grams",
+    "intensity",
     "duration_min",
+    "carbs_g",
     "note",
-    "ai_estimate"
+    "source"
   ];
   const rows = readEvents().slice().reverse().map((event) => [
-    event.id,
+    exportTimestampIso(event),
     exportDate(event),
     exportTime(event),
-    eventTimestamp(event),
-    timezoneOffset(eventTimestamp(event)),
-    event.timestamp_start || "",
-    event.timestamp_end || "",
     exportCategory(event),
-    exportEventType(event),
     exportSubtype(event),
-    event.action || "",
-    exportIntensity(event),
     exportSize(event),
-    event.carbs_grams ?? "",
     event.duration_min ?? "",
+    event.carbs_g ?? event.carbs_grams ?? "",
     exportNote(event),
-    event.ai_estimate ? JSON.stringify(event.ai_estimate) : ""
+    event.source || (event.ai_estimate ? "ai_camera" : "manual")
   ].map(csvCell).join(","));
 
   const csv = [header.join(","), ...rows].join("\n");
@@ -835,6 +899,10 @@ function eventTimestamp(event) {
   return event.timestamp || event.timestamp_start || "";
 }
 
+function exportTimestampIso(event) {
+  return eventTimestamp(event).slice(0, 19);
+}
+
 function exportDate(event) {
   return eventTimestamp(event).slice(0, 10).replaceAll("-", "/");
 }
@@ -843,41 +911,57 @@ function exportTime(event) {
   return eventTimestamp(event).slice(11, 19);
 }
 
-function timezoneOffset(timestamp) {
-  const match = String(timestamp || "").match(/([+-]\d{2}:\d{2})$/);
-  return match ? match[1] : "";
-}
-
 function exportCategory(event) {
-  return EVENT_CATEGORIES[event.event_type] || "other";
-}
-
-function exportEventType(event) {
-  if (["carbs", "junk_food"].includes(event.event_type)) return "carbs_not_in_pump";
-  return event.event_type;
+  return event.category || EVENT_CATEGORIES[event.event_type] || categoryFromSubtype(exportSubtype(event)) || "other";
 }
 
 function exportSubtype(event) {
-  if (event.event_type === "protein") return "shake";
-  if (event.event_type === "carbs") return event.note || "";
-  if (event.event_type === "junk_food") return "junk_food";
-  return "";
+  return normalizeSubtype(event.subtype || subtypeFromEventType(event.event_type, event.note));
 }
 
 function exportIntensity(event) {
-  if (!STATE_TYPES.has(event.event_type) && event.event_type !== "anxiety") return "";
-  return labelLevel(normalizeMoodLevel(event.intensity));
+  if (exportCategory(event) !== "mood" && exportCategory(event) !== "activity") return "";
+  return INTENSITY_EXPORT[event.intensity] || INTENSITY_EXPORT[normalizeMoodLevel(event.intensity)] || "";
 }
 
 function exportSize(event) {
-  if (!["carbs", "junk_food"].includes(event.event_type)) return "";
-  return labelLevel(event.intensity);
+  if (!["food", "drink"].includes(exportCategory(event))) return "";
+  return event.size || (PORTION_LEVELS.includes(event.intensity) ? event.intensity : "");
 }
 
 function exportNote(event) {
-  if (event.event_type === "carbs" && event.note) return "";
-  if (event.event_type === "junk_food") return "";
+  if (event.ai_estimate?.short_note) return event.ai_estimate.short_note;
+  if (event.event_type === "carbs" && event.note && normalizeSubtype(event.note)) return "";
   return event.note || "";
+}
+
+function subtypeFromEventType(eventType, note = "") {
+  if (eventType === "carbs") return note || "snack";
+  if (eventType === "food") return note || "snack";
+  if (eventType === "sleep_good") return "good";
+  if (eventType === "sleep_bad") return "bad";
+  if (eventType === "sleep_short") return "short";
+  if (eventType === "junk_food") return "junk";
+  return eventType || "";
+}
+
+function normalizeSubtype(value) {
+  const normalized = String(value || "")
+    .trim()
+    .toLowerCase()
+    .replaceAll("-", "_")
+    .replaceAll(" ", "_");
+  return SUBTYPE_ALIASES[normalized] || normalized;
+}
+
+function categoryFromSubtype(subtype) {
+  return EVENT_CATEGORIES[subtype] || "";
+}
+
+function titleCase(value) {
+  return String(value || "")
+    .replaceAll("_", " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
 function migrateLegacyEvents() {
@@ -957,7 +1041,8 @@ function setupCategoryRail() {
 function setupInstantButtons() {
   document.querySelectorAll("[data-instant-type]").forEach((button) => {
     button.addEventListener("click", () => {
-      addEvent({ event_type: button.dataset.instantType, action: "instant" });
+      const subtype = normalizeSubtype(button.dataset.instantType);
+      addEvent({ event_type: subtype, subtype, category: categoryFromSubtype(subtype), action: "instant" });
     });
   });
 
@@ -979,9 +1064,10 @@ function setupInstantButtons() {
 
   document.querySelectorAll("[data-carb-subtype]").forEach((button) => {
     setupChoiceSlider(button, {
-      levels: MOOD_LEVELS,
+      levels: PORTION_LEVELS,
       onCommit: (level) => {
-        addEvent({ event_type: "carbs", action: "instant", note: button.dataset.carbSubtype, intensity: level });
+        const subtype = normalizeSubtype(button.dataset.carbSubtype);
+        addEvent({ event_type: "carbs", category: "food", subtype, action: "instant", size: level, intensity: level });
       }
     });
   });
@@ -1034,9 +1120,13 @@ async function handleAiPhoto(file) {
 
     addEvent({
       event_type: "carbs",
+      category: "food",
+      subtype: "photo",
       action: "instant",
       note: "AI estimate",
       carbs_grams: estimate.grams,
+      carbs_g: estimate.grams,
+      source: "ai_camera",
       ai_estimate: estimate
     });
     typeStatus(aiSuccessMessage(estimate));
@@ -1129,13 +1219,14 @@ function openChoiceDialog(choiceType) {
     button.className = choiceType === "carbs" ? "secondary dialog-secondary choice-slider" : "secondary dialog-secondary";
     button.type = "button";
     button.innerHTML = choiceType === "carbs"
-      ? `<span>${escapeHtml(item)}</span><small>slide S / M / L</small>`
+      ? `<span>${escapeHtml(item)}</span><small>slide S / M / L / XL</small>`
       : escapeHtml(item);
     if (choiceType === "carbs") {
       setupChoiceSlider(button, {
-        levels: MOOD_LEVELS,
+        levels: PORTION_LEVELS,
         onCommit: (level) => {
-          addEvent({ event_type: "carbs", action: "instant", note: item, intensity: level });
+          const subtype = normalizeSubtype(item);
+          addEvent({ event_type: "carbs", category: "food", subtype, action: "instant", size: level, intensity: level });
           choiceDialog.close();
         }
       });
@@ -1193,26 +1284,26 @@ function setupChoiceSlider(button, { levels, onCommit }) {
 }
 
 function setupIntensitySlider(button) {
-  const eventType = button.dataset.intensityType;
+  const subtype = normalizeSubtype(button.dataset.intensityType);
   setupInlineSlider(button, {
     levels: MOOD_LEVELS,
-    onCommit: (level) => addEvent({ event_type: eventType, action: "instant", intensity: level })
+    onCommit: (level) => addEvent({ event_type: subtype, category: "mood", subtype, action: "instant", intensity: level })
   });
 }
 
 function setupSizeSlider(button) {
-  const eventType = button.dataset.sizeType;
+  const subtype = normalizeSubtype(button.dataset.sizeType);
   setupInlineSlider(button, {
     levels: PORTION_LEVELS,
-    onCommit: (level) => addEvent({ event_type: eventType, action: "instant", intensity: level })
+    onCommit: (level) => addEvent({ event_type: "carbs", category: "food", subtype, action: "instant", size: level, intensity: level })
   });
 }
 
 function setupCarbPortionSlider(button) {
-  const subtype = button.dataset.carbPortionSubtype;
+  const subtype = normalizeSubtype(button.dataset.carbPortionSubtype);
   setupInlineSlider(button, {
     levels: PORTION_LEVELS,
-    onCommit: (level) => addEvent({ event_type: "carbs", action: "instant", note: subtype, intensity: level })
+    onCommit: (level) => addEvent({ event_type: "carbs", category: "food", subtype, action: "instant", size: level, intensity: level })
   });
 }
 
