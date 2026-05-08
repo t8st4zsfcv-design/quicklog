@@ -13,7 +13,7 @@ const CAN_USE_SERVER_DB = location.protocol === "http:" || location.protocol ===
 const SERVER_RETRY_MS = 8000;
 const API_TIMEOUT_MS = 12000;
 const AI_TIMEOUT_MS = 45000;
-const APP_VERSION = "72";
+const APP_VERSION = "73";
 
 // Flipped to true after we detect the deploy has no /api/* functions yet
 // (Cloudflare Pages without Functions, or pure-static host). When true:
@@ -1149,6 +1149,7 @@ function setupChoiceSlider(button, { levels, onCommit }) {
   const hint = button.querySelector("small")?.textContent || "slide";
   let activePointerId = null;
   let currentLevel = levels[0];
+  button.dataset.levelCount = String(levels.length);
 
   const setLevelFromPointer = (event) => {
     const rect = button.getBoundingClientRect();
@@ -1219,6 +1220,7 @@ function setupInlineSlider(button, { levels, onCommit }) {
   const hint = button.querySelector("small")?.textContent || "hold and slide";
   let activePointerId = null;
   let currentLevel = levels[0];
+  button.dataset.levelCount = String(levels.length);
 
   const setLevelFromPointer = (event) => {
     const rect = button.getBoundingClientRect();
