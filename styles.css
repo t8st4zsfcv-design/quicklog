@@ -1423,8 +1423,17 @@ textarea {
   width: min(100%, 371px);
 }
 
+html,
 body {
-  background: #969694;
+  background: #405956 !important;
+}
+
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: #405956;
+  content: "";
 }
 
 .log-panel {
