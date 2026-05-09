@@ -38,11 +38,6 @@ button {
   padding: 22px;
 }
 
-.stage-head,
-.stage-foot {
-  display: none;
-}
-
 .phone {
   width: min(100vw, 430px);
   height: min(100vh, 932px);
@@ -60,36 +55,6 @@ button {
   height: 100%;
   overflow: hidden;
   background: var(--panel);
-}
-
-.status-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 34px;
-  padding: 9px 24px 0;
-  color: rgba(247, 244, 237, 0.72);
-  font-family: var(--mono);
-  font-size: 11px;
-}
-
-.dots {
-  display: flex;
-  gap: 3px;
-}
-
-.dots span {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-.battery {
-  width: 23px;
-  height: 11px;
-  border: 1.5px solid currentColor;
-  border-radius: 4px;
 }
 
 .head {
@@ -181,15 +146,6 @@ button {
 .ev.drink { background: var(--peach-2); }
 .ev.activity { background: var(--green); }
 .ev.mood { background: var(--red); }
-
-.now {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: #405956;
-  transform: translateX(-50%);
-}
 
 .timeline-axis {
   position: absolute;
@@ -394,109 +350,6 @@ button {
   padding: 32px;
   text-align: center;
   color: var(--muted);
-}
-
-.cam-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 50;
-  display: grid;
-  grid-template-rows: auto 1fr auto;
-  background: #101917;
-  color: var(--ink);
-}
-
-.cam-top,
-.cam-shutter-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px;
-}
-
-.cam-step {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.1em;
-}
-
-.cam-viewport {
-  position: relative;
-  display: grid;
-  place-items: center;
-  margin: 0 18px;
-  border-radius: 26px;
-  background: linear-gradient(135deg, #233330, #405956);
-  overflow: hidden;
-}
-
-.cam-placeholder,
-.cam-photo {
-  text-align: center;
-  color: rgba(247, 244, 237, 0.72);
-  font-family: var(--mono);
-  font-size: 12px;
-  letter-spacing: 0.1em;
-}
-
-.cam-confirm,
-.cam-analyzing {
-  position: absolute;
-  right: 18px;
-  bottom: 18px;
-  left: 18px;
-  padding: 18px;
-  border-radius: 22px;
-  background: var(--paper);
-  color: #405956;
-}
-
-.est b {
-  font-family: var(--display);
-  font-size: 42px;
-}
-
-.est small,
-.guess small {
-  display: block;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.08em;
-}
-
-.adjust-row,
-.cam-confirm-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 14px;
-}
-
-.adjust-row button,
-.btn {
-  flex: 1;
-  border: 0;
-  border-radius: 999px;
-  padding: 12px;
-  font-weight: 800;
-}
-
-.adjust-row .on,
-.btn-primary {
-  background: var(--peach);
-  color: #405956;
-}
-
-.btn-ghost {
-  background: rgba(64, 89, 86, 0.1);
-  color: #405956;
-}
-
-.shutter {
-  width: 68px;
-  height: 68px;
-  border: 5px solid rgba(255, 255, 255, 0.4);
-  border-radius: 50%;
-  background: white;
 }
 
 .toast {

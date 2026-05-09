@@ -61,6 +61,11 @@ function currentClock() {
   };
 }
 
+function currentHour() {
+  const now = new Date();
+  return now.getHours() + (now.getMinutes() / 60) + (now.getSeconds() / 3600);
+}
+
 function eventSortValue(event) {
   if (Number.isFinite(event?.hour)) return event.hour;
   const [h = 0, m = 0] = String(event?.time || '').split(':').map(Number);
@@ -156,12 +161,6 @@ const Icon = {
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
 };
 
-function StatusBar() { return (
-  <div className="status-bar">
-    <span>9:41</span><div className="dots"><span/><span/><span/></div><div className="battery"/>
-  </div>
-);}
-
 function Header({ dayOffset, setDayOffset, onUndo, canUndo }) {
   const labels = { 0: 'DNES', '-1': 'VČERA', '-2': 'PREDVČER.' };
   const lbl = labels[dayOffset] || `−${Math.abs(dayOffset)} DNÍ`;
@@ -193,7 +192,6 @@ function Timeline({ events }) {
         {events.map((e) => (
           <div key={e.id} className={`ev ${e.cat}`} style={{ left: `${project(e.hour)}%`, height: `${heightFor(e)}px` }} title={`${e.time} · ${e.label}`}/>
         ))}
-        <div className="now" style={{ left: `${project(21.9)}%` }}/>
       </div>
       <div className="timeline-axis"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
     </div>
@@ -206,8 +204,12 @@ function DragCard({ item, onLog }) {
   const [pct, setPct] = useState(0);
   const [sizeIdx, setSizeIdx] = useState(0);
   const startX = useRef(null);
+  const pctRef = useRef(0);
+  const sizeIdxRef = useRef(0);
+  const pointerIdRef = useRef(null);
   const widthRef = useRef(200);
   const ref = useRef(null);
+  const minCommitPct = 0.16;
 
   const computeIdx = (p) => {
     if (p < 0.25) return 0;
@@ -216,50 +218,58 @@ function DragCard({ item, onLog }) {
     return 3;
   };
 
-  const onDown = (e) => {
-    e.preventDefault();
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    startX.current = x;
-    widthRef.current = ref.current?.offsetWidth || 200;
-    setDragging(true);
-    setPct(0.05);
-    setSizeIdx(0);
-  };
-  const onMove = (e) => {
-    if (startX.current == null) return;
-    const x = e.touches ? e.touches[0].clientX : e.clientX;
-    const dx = x - startX.current;
-    const w = widthRef.current;
-    const p = Math.min(1, Math.max(0, dx / w));
-    setPct(p);
-    setSizeIdx(computeIdx(p));
-  };
-  const onUp = () => {
-    if (startX.current == null) return;
-    if (pct > 0.04) {
-      onLog({ ...item, size: SIZES[sizeIdx] });
-    }
+  const resetDrag = () => {
     startX.current = null;
+    pointerIdRef.current = null;
+    pctRef.current = 0;
+    sizeIdxRef.current = 0;
     setDragging(false);
     setPct(0);
     setSizeIdx(0);
   };
 
-  useEffect(() => {
-    if (!dragging) return;
-    const move = (e) => onMove(e);
-    const up = () => onUp();
-    window.addEventListener('mousemove', move);
-    window.addEventListener('mouseup', up);
-    window.addEventListener('touchmove', move, { passive: false });
-    window.addEventListener('touchend', up);
-    return () => {
-      window.removeEventListener('mousemove', move);
-      window.removeEventListener('mouseup', up);
-      window.removeEventListener('touchmove', move);
-      window.removeEventListener('touchend', up);
-    };
-  }, [dragging, pct, sizeIdx]);
+  const updateDrag = (clientX) => {
+    if (startX.current == null) return;
+    const p = Math.min(1, Math.max(0, (clientX - startX.current) / widthRef.current));
+    const idx = computeIdx(p);
+    pctRef.current = p;
+    sizeIdxRef.current = idx;
+    setPct(p);
+    setSizeIdx(idx);
+  };
+
+  const onPointerDown = (e) => {
+    if (e.button !== undefined && e.button !== 0) return;
+    e.preventDefault();
+    startX.current = e.clientX;
+    pointerIdRef.current = e.pointerId;
+    widthRef.current = ref.current?.offsetWidth || 200;
+    pctRef.current = 0;
+    sizeIdxRef.current = 0;
+    ref.current?.setPointerCapture?.(e.pointerId);
+    setDragging(true);
+    setPct(0);
+    setSizeIdx(0);
+  };
+  const onPointerMove = (e) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+    e.preventDefault();
+    updateDrag(e.clientX);
+  };
+  const onPointerUp = (e) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+    e.preventDefault();
+    updateDrag(e.clientX);
+    ref.current?.releasePointerCapture?.(e.pointerId);
+    if (pctRef.current >= minCommitPct) {
+      onLog({ ...item, size: SIZES[sizeIdxRef.current] });
+    }
+    resetDrag();
+  };
+  const onPointerCancel = (e) => {
+    if (pointerIdRef.current !== e.pointerId) return;
+    resetDrag();
+  };
 
   const fillPct = dragging ? pct * 100 : 0;
   const currentSize = dragging ? SIZES[sizeIdx] : null;
@@ -269,8 +279,10 @@ function DragCard({ item, onLog }) {
       ref={ref}
       className={`tcard drag ${dragging ? 'dragging' : ''} cat-${item.cat}`}
       data-size={currentSize || ''}
-      onMouseDown={onDown}
-      onTouchStart={onDown}
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      onPointerCancel={onPointerCancel}
       style={{ '--fill': `${fillPct}%` }}
     >
       <div className="tcard-fill" />
@@ -334,7 +346,7 @@ function MoodCard({ item, onLog }) {
 function LiveTimer({ startHour }) {
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
-  const totalSec = Math.floor(((21 + 53/60) - startHour) * 3600) + tick;
+  const totalSec = Math.max(0, Math.floor((currentHour() - startHour) * 3600) + tick);
   const h = Math.floor(totalSec/3600), m = Math.floor((totalSec%3600)/60), s = totalSec%60;
   if (h > 0) return <span>{String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
@@ -401,12 +413,6 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
 }
 
 // ====== Records ======
-function fmtTime(hour) {
-  const h = Math.floor(hour);
-  const m = Math.round((hour - h) * 60);
-  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
-}
-
 function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
@@ -468,57 +474,6 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
   );
 }
 
-// ====== Camera AI ======
-function CameraOverlay({ step, setStep, onConfirm, onClose }) {
-  const [estimate, setEstimate] = useState(58);
-  useEffect(() => {
-    if (step === 'analyzing') { const t = setTimeout(() => setStep('confirm'), 1600); return () => clearTimeout(t); }
-  }, [step]);
-  return (
-    <div className="cam-overlay">
-      <div className="cam-top">
-        <button className="icon-btn" onClick={onClose}>×</button>
-        <div className="cam-step"><b>{step === 'capture' ? '01' : step === 'analyzing' ? '02' : '03'}</b> {step === 'capture' ? 'NASNÍMAJ' : step === 'analyzing' ? 'AI ANALYZUJE' : 'POTVRĎ'}</div>
-        <span style={{width: 34}}/>
-      </div>
-      <div className="cam-viewport">
-        {step === 'capture' && (<>
-          <div className="cam-corners"><i/><i/></div>
-          <div className="cam-placeholder">NAMIER NA JEDLO<br/><span style={{opacity:0.5}}>AI odhadne sacharidy</span></div>
-        </>)}
-        {step === 'analyzing' && (<>
-          <div className="cam-photo"><span>FOTO · KULURI 60g</span></div>
-          <div className="cam-analyzing"><span className="pulse-dot"/><div className="lines"><b>Rozpoznávam jedlo…</b><small>~1.6s</small></div></div>
-        </>)}
-        {step === 'confirm' && (<>
-          <div className="cam-photo"><span>FOTO · KULURI</span></div>
-          <div className="cam-confirm">
-            <div className="est"><b>~{estimate}g</b><small>SACHARIDY · ODHAD</small></div>
-            <div className="guess">Kuluri · porcia L<small>~280 kcal · vysoký GI</small></div>
-            <div className="adjust-row">
-              <button onClick={() => setEstimate(Math.max(0, estimate-10))}>−10g</button>
-              <button className="on">{estimate}g</button>
-              <button onClick={() => setEstimate(estimate+10)}>+10g</button>
-            </div>
-            <div className="cam-confirm-actions">
-              <button className="btn btn-ghost" onClick={() => setStep('capture')}>Znova</button>
-              <button className="btn btn-primary" onClick={() => onConfirm({ sub: 'kuluri', label: 'Kuluri', size: 'L', carbs: estimate, cat: 'food' })}>Pridať záznam</button>
-            </div>
-          </div>
-        </>)}
-      </div>
-      {step === 'capture' && (
-        <div className="cam-shutter-row">
-          <span style={{width: 40}}/>
-          <button className="shutter" onClick={() => setStep('analyzing')}/>
-          <span style={{width: 40}}/>
-        </div>
-      )}
-      {step !== 'capture' && <div style={{height: 28}}/>}
-    </div>
-  );
-}
-
 function Phone({ children }) {
   return (
     <div className="phone" data-screen-label="Denník">
@@ -571,7 +526,11 @@ function App() {
     showToast(<><b>{item.label}</b> štart</>);
   };
   const onStopTimer = (id) => {
-    setEvents(es => es.map(e => e.id === id ? { ...e, running: false, ended: true, duration: 60 } : e));
+    setEvents(es => es.map(e => {
+      if (e.id !== id) return e;
+      const duration = Math.max(1, Math.round((currentHour() - e.hour) * 60));
+      return { ...e, running: false, ended: true, duration };
+    }));
     showToast(<>Timer zastavený</>);
   };
   const onAdjustTime = (id, deltaMin) => {
