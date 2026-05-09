@@ -1,17 +1,17 @@
-// QuickLog Service Worker v94
+// QuickLog Service Worker v95
 // Strategy:
 //   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
 //   - API requests (/api/*): network-only (no caching)
 //   - Other requests: network-first with cache fallback (offline support)
 
-const CACHE_NAME = "quicklog-v94";
-const APP_VERSION = "94";
+const CACHE_NAME = "quicklog-v95";
+const APP_VERSION = "95";
 const CORE_SHELL = [
   "/",
   "/index.html",
-  "/dennik-v94.css",
-  "/dennik-turbo-v94.css",
-  "/dennik-v94.jsx",
+  `/dennik.css?v=${APP_VERSION}`,
+  `/dennik-turbo.css?v=${APP_VERSION}`,
+  `/dennik.jsx?v=${APP_VERSION}`,
   `/manifest.webmanifest?v=${APP_VERSION}`
 ];
 const OPTIONAL_SHELL = [
@@ -27,11 +27,6 @@ const APP_SHELL_PATHS = new Set([
   "/dennik.css",
   "/dennik-turbo.css",
   "/dennik.jsx",
-  "/dennik-v94.css",
-  "/dennik-turbo-v94.css",
-  "/dennik-v94.jsx",
-  "/styles.css",
-  "/app.js",
   "/manifest.webmanifest"
 ]);
 
@@ -77,30 +72,38 @@ self.addEventListener("fetch", (event) => {
 
   if (isNavigationRequest(event.request)) {
     event.respondWith(
-      caches.match("/", { ignoreSearch: true })
-        .then((cached) => cached || caches.match("/index.html", { ignoreSearch: true }))
-        .then((cached) => cached || fetch(event.request))
-        .catch(() => caches.match("/index.html", { ignoreSearch: true }))
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && url.origin === self.location.origin) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put("/", clone.clone());
+              cache.put("/index.html", clone);
+            });
+          }
+          return response;
+        })
+        .catch(() => (
+          caches.match("/", { ignoreSearch: false })
+            .then((cached) => cached || caches.match("/index.html", { ignoreSearch: false }))
+            .then((cached) => cached || new Response("Offline", { status: 503 }))
+        ))
     );
     return;
   }
 
   if (isAppShellRequest(url)) {
     event.respondWith(
-      caches.match(event.request, { ignoreSearch: true })
-        .then((cached) => {
-          const fresh = fetch(event.request)
-            .then((response) => {
-              if (response.ok && url.origin === self.location.origin) {
-                const clone = response.clone();
-                caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
-              }
-              return response;
-            })
-            .catch(() => cached);
-          return cached || fresh;
+      fetch(event.request)
+        .then((response) => {
+          if (response.ok && url.origin === self.location.origin) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
         })
-        .then((response) => response || new Response("Offline", { status: 503 }))
+        .catch(() => caches.match(event.request, { ignoreSearch: false })
+          .then((cached) => cached || new Response("Offline", { status: 503 })))
     );
     return;
   }

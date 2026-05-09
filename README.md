@@ -1,7 +1,7 @@
 # QuickLog — Cloudflare deploy
 
 ## What's in this folder
-- `index.html`, `app.js`, `styles.css`, `sw.js`, `manifest.webmanifest`, `icons/`
+- `index.html`, `dennik.jsx`, `dennik.css`, `dennik-turbo.css`, `sw.js`, `manifest.webmanifest`, `icons/`
 - `_headers` — Cloudflare config so the Service Worker can update cleanly
 - No `server.mjs`, no `events-db.json` — we run pure static, data lives in `localStorage` on the iPhone
 
