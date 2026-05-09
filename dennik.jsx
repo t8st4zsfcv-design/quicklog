@@ -49,6 +49,79 @@ function loadLocalEvents() {
   }
 }
 
+function currentClock() {
+  const now = new Date();
+  const h = now.getHours();
+  const m = now.getMinutes();
+  return {
+    time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
+    hour: h + (m / 60)
+  };
+}
+
+function eventDateParts(event) {
+  const date = new Date();
+  const [h = 0, m = 0] = String(event.time || '').split(':').map(Number);
+  date.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return { iso: date.toISOString(), day: `${yyyy}-${mm}-${dd}` };
+}
+
+function csvCell(value) {
+  const text = value == null ? '' : String(value);
+  return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function eventsToCsv(events) {
+  const header = ['timestamp_iso', 'date', 'time', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
+  const rows = events
+    .slice()
+    .sort((a, b) => (a.hour || 0) - (b.hour || 0))
+    .map((event) => {
+      const date = eventDateParts(event);
+      return [
+        date.iso,
+        date.day,
+        event.time,
+        event.cat,
+        event.sub,
+        event.label,
+        event.size,
+        event.duration,
+        event.carbs,
+        event.confidence,
+        event.note,
+        event.source || 'manual'
+      ];
+    });
+  return [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
+}
+
+function downloadEventsCsv(events) {
+  const csv = eventsToCsv(events);
+  const day = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `fasttrack-zaznamy-${day}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function fileToDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(reader.error || new Error('Nepodarilo sa načítať fotku.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 const Icon = {
   Cam: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>,
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
@@ -305,7 +378,7 @@ function fmtTime(hour) {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
-function Records({ events, onAdjustTime, onDelete }) {
+function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
@@ -315,7 +388,7 @@ function Records({ events, onAdjustTime, onDelete }) {
     <div className="scroll">
       <div className="rec-head">
         <h2>Záznamy</h2>
-        <div className="rec-tools"><button className="rec-pill">CSV ↓</button></div>
+        <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
         {['all','food','drink','activity','mood'].map((f) => (
@@ -429,9 +502,10 @@ function App() {
   const [view, setView] = useState('home');
   const [events, setEvents] = useState(loadLocalEvents);
   const [history, setHistory] = useState([]);
-  const [cameraStep, setCameraStep] = useState(null);
+  const [cameraBusy, setCameraBusy] = useState(false);
   const [toast, setToast] = useState(null);
   const [dayOffset, setDayOffset] = useState(0);
+  const cameraInputRef = useRef(null);
 
   const runningEvent = events.find(e => e.running);
 
@@ -450,7 +524,7 @@ function App() {
       const item = TURBO.find(t => t.sub === data.sub);
       carbs = item?.carbsByMass?.[data.size];
     }
-    const evt = { id, time: '21:53', hour: 21.88, ...data, carbs };
+    const evt = { id, ...currentClock(), ...data, carbs };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
     showToast(<>Pridané <b>{evt.label}{evt.size ? ' '+evt.size : ''}</b></>);
@@ -462,7 +536,7 @@ function App() {
   const onStartTimer = (item) => {
     if (runningEvent) return;
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
-    const evt = { id, time: '21:53', hour: 21.88, sub: item.sub, label: item.label, cat: item.cat, running: true };
+    const evt = { id, ...currentClock(), sub: item.sub, label: item.label, cat: item.cat, running: true };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
     showToast(<><b>{item.label}</b> štart</>);
@@ -494,6 +568,45 @@ function App() {
     if (last.kind === 'delete') setEvents(es => [...es, last.evt]);
     setToast(null);
   };
+  const exportCsv = () => {
+    downloadEventsCsv(events);
+    showToast(events.length ? <>CSV stiahnuté</> : <>CSV stiahnuté bez záznamov</>);
+  };
+  const openCamera = () => {
+    if (cameraBusy) return;
+    cameraInputRef.current?.click();
+  };
+  const onCameraFile = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCameraBusy(true);
+    showToast(<>AI analyzuje fotku…</>);
+    try {
+      const image = await fileToDataUrl(file);
+      const response = await fetch('/api/estimate-carbs', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ image })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.error || 'AI odhad zlyhal.');
+      const grams = Math.max(0, Math.round(Number(result.grams) || 0));
+      addEvent({
+        sub: 'photo',
+        label: 'AI foto',
+        cat: 'food',
+        carbs: grams,
+        confidence: result.confidence,
+        note: result.short_note,
+        source: 'camera-ai'
+      });
+    } catch (error) {
+      showToast(<>{error.message || 'Fotka sa nepodarila spracovať.'}</>);
+    } finally {
+      setCameraBusy(false);
+      event.target.value = '';
+    }
+  };
 
   return (
     <Phone>
@@ -508,18 +621,24 @@ function App() {
           onStopTimer={onStopTimer}
         />
       )}
-      {view === 'records' && <Records events={events} onAdjustTime={onAdjustTime} onDelete={onDelete}/>}
+      {view === 'records' && <Records events={events} onAdjustTime={onAdjustTime} onDelete={onDelete} onExportCsv={exportCsv}/>}
 
       <div className="bottom-bar simple">
-        <button className="fab-cam" onClick={() => setCameraStep('capture')}><Icon.Cam/></button>
+        <button className="fab-cam" onClick={openCamera} disabled={cameraBusy} aria-label="Otvoriť kameru"><Icon.Cam/></button>
+        <input
+          ref={cameraInputRef}
+          className="camera-input"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={onCameraFile}
+        />
         <div className="nav-pill">
           <button className={view==='home'?'on':''} onClick={() => setView('home')}>Hlavná</button>
           <button className={view==='records'?'on':''} onClick={() => setView('records')}>Záznamy</button>
         </div>
         <span style={{width: 38}}/>
       </div>
-
-      {cameraStep && <CameraOverlay step={cameraStep} setStep={setCameraStep} onConfirm={(d) => { addEvent(d); setCameraStep(null); }} onClose={() => setCameraStep(null)}/>}
 
       {toast && (
         <div className="toast">

@@ -536,6 +536,14 @@ button {
   font-weight: 800;
 }
 
+.camera-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .home-indicator {
   position: absolute;
   bottom: 7px;
