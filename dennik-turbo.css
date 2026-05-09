@@ -42,7 +42,7 @@
   width: var(--fill, 0%);
   background: linear-gradient(90deg, var(--peach) 0%, var(--peach-2) 100%);
   opacity: 0.35;
-  transition: width 0.04s linear;
+  transition: width 0.12s ease-out;
   z-index: 0;
   pointer-events: none;
 }
@@ -301,7 +301,7 @@
   position: absolute;
   top: 2px;
   bottom: 12px;
-  left: 58px;
+  left: 55px;
   width: 2px;
   background: rgba(247,244,237,0.15);
   content: "";
@@ -342,6 +342,7 @@
 .rec-row-dot {
   position: relative;
   z-index: 1;
+  justify-self: center;
   width: 10px;
   height: 10px;
   margin-top: 8px;

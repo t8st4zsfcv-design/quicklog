@@ -201,7 +201,6 @@ function Timeline({ events }) {
 // ====== Horizontal drag card (L→R for S/M/L/XL) ======
 function DragCard({ item, onLog }) {
   const [dragging, setDragging] = useState(false);
-  const [pct, setPct] = useState(0);
   const [sizeIdx, setSizeIdx] = useState(0);
   const startX = useRef(null);
   const pctRef = useRef(0);
@@ -224,7 +223,6 @@ function DragCard({ item, onLog }) {
     pctRef.current = 0;
     sizeIdxRef.current = 0;
     setDragging(false);
-    setPct(0);
     setSizeIdx(0);
   };
 
@@ -234,8 +232,7 @@ function DragCard({ item, onLog }) {
     const idx = computeIdx(p);
     pctRef.current = p;
     sizeIdxRef.current = idx;
-    setPct(p);
-    setSizeIdx(idx);
+    setSizeIdx((currentIdx) => currentIdx === idx ? currentIdx : idx);
   };
 
   const onPointerDown = (e) => {
@@ -248,7 +245,6 @@ function DragCard({ item, onLog }) {
     sizeIdxRef.current = 0;
     ref.current?.setPointerCapture?.(e.pointerId);
     setDragging(true);
-    setPct(0);
     setSizeIdx(0);
   };
   const onPointerMove = (e) => {
@@ -271,7 +267,7 @@ function DragCard({ item, onLog }) {
     resetDrag();
   };
 
-  const fillPct = dragging ? pct * 100 : 0;
+  const fillPct = dragging ? (sizeIdx + 1) * 25 : 0;
   const currentSize = dragging ? SIZES[sizeIdx] : null;
 
   return (
