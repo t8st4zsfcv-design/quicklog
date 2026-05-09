@@ -295,10 +295,12 @@ button {
 
 .rec-filter {
   display: flex;
+  flex-wrap: nowrap;
   gap: 7px;
   overflow-x: auto;
   padding: 0 18px 16px;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
 
 .rec-filter::-webkit-scrollbar {
