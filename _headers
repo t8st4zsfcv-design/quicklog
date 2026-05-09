@@ -6,7 +6,7 @@
 # Manifest needs the right MIME type so iOS recognizes it.
 /manifest.webmanifest
   Content-Type: application/manifest+json; charset=utf-8
-  Cache-Control: public, max-age=300
+  Cache-Control: public, max-age=0, must-revalidate
 
 # Reasonable defaults for everything else.
 /*

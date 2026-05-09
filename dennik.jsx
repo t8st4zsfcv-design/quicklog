@@ -38,17 +38,16 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L', 'XL'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľká · ~60g', XL: 'hostina · ~90g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
+const STORAGE_KEY = 'fasttrack-diary-events-v1';
 
-// ====== Sample seed (today) ======
-const SEED = [
-  { id: 1, time: '08:15', cat: 'drink', sub: 'coffee', label: 'Coffee', size: 'M', hour: 8.25 },
-  { id: 2, time: '09:00', cat: 'mood',  sub: 'stress', label: 'Stress', size: 'L', hour: 9 },
-  { id: 3, time: '13:30', cat: 'food',  sub: 'kuluri', label: 'Kuluri', size: 'L', carbs: 60, hour: 13.5 },
-  { id: 4, time: '14:00', cat: 'activity', sub: 'walk', label: 'Walk', duration: 25, hour: 14, ended: true },
-  { id: 5, time: '19:00', cat: 'food',  sub: 'bread',  label: 'Bread',  size: 'M', carbs: 30, hour: 19 },
-  { id: 6, time: '20:30', cat: 'drink', sub: 'beer',   label: 'Beer',   size: 'L', hour: 20.5 },
-  { id: 7, time: '20:30', cat: 'activity', sub: 'party', label: 'Party', hour: 20.5, running: true },
-];
+function loadLocalEvents() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
 
 const Icon = {
   Cam: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>,
@@ -428,13 +427,19 @@ function Phone({ children }) {
 
 function App() {
   const [view, setView] = useState('home');
-  const [events, setEvents] = useState(SEED);
+  const [events, setEvents] = useState(loadLocalEvents);
   const [history, setHistory] = useState([]);
   const [cameraStep, setCameraStep] = useState(null);
   const [toast, setToast] = useState(null);
   const [dayOffset, setDayOffset] = useState(0);
 
   const runningEvent = events.find(e => e.running);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    } catch {}
+  }, [events]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(t => t === msg ? null : t), 2600); };
 

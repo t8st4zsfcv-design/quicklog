@@ -1,9 +1,9 @@
-# QuickLog — Cloudflare deploy
+# FastTrack — Cloudflare deploy
 
 ## What's in this folder
 - `index.html`, `dennik.jsx`, `dennik.css`, `dennik-turbo.css`, `sw.js`, `manifest.webmanifest`, `icons/`
 - `_headers` — Cloudflare config so the Service Worker can update cleanly
-- No `server.mjs`, no `events-db.json` — we run pure static, data lives in `localStorage` on the iPhone
+- No `server.mjs`, no `events-db.json` — we run pure static, data lives in a fresh FastTrack `localStorage` key on the iPhone
 
 ## Phase 1 deploy
 1. Sign up at https://dash.cloudflare.com (free).
@@ -40,4 +40,4 @@ The original `server.mjs` is kept outside this deploy folder. You can still run 
 ```
 PORT=4174 node server.mjs
 ```
-That keeps `events-db.json` sync working on Mac. None of this is required for the iPhone.
+The current iPhone app does not use a server event DB. `/api/events` deliberately returns an empty localStorage contract so records stay phone-local.
