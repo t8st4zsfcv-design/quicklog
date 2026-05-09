@@ -1,393 +1,51 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <meta name="theme-color" content="#3f5c58">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="QuickLog">
-    <title>QuickLog</title>
-    <link rel="manifest" href="manifest.webmanifest?v=92">
-    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=92">
-    <link rel="icon" href="icons/icon-192.png?v=92">
-    <link rel="stylesheet" href="styles.css?v=92">
-  </head>
-  <body>
-    <main class="app-shell">
-      <section class="phone-panel" data-active-category="main">
-        <section class="workspace">
-          <header class="topbar">
-            <div>
-              <p class="eyebrow">FastTrack</p>
-              <h1 id="categoryTitle">Overall</h1>
-            </div>
-            <div class="top-actions" aria-label="App actions">
-              <button class="icon-button refresh-button" id="refreshBtn" type="button" aria-label="Refresh app" title="Refresh app">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M18 9a6.8 6.8 0 0 0-11.4-2.7L4 9"/><path d="M6 15a6.8 6.8 0 0 0 11.4 2.7L20 15"/></svg>
-                <span class="sr-only">Refresh app</span>
-              </button>
-            </div>
-          </header>
+<html lang="sk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FastTrack — Denník</title>
+  <link rel="manifest" href="manifest.webmanifest?v=93">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png?v=93">
+  <link rel="icon" href="icons/icon-192.png?v=93">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="dennik.css?v=93">
+  <link rel="stylesheet" href="dennik-turbo.css?v=93">
 
-          <section class="category-panel is-active" data-category-panel="main" aria-label="Main overview">
-            <div class="main-overview fast-home">
-              <input id="aiPhotoInput" type="file" accept="image/*" capture="environment" hidden>
-              <section class="fast-stat-card" aria-label="Quick statistics">
-                <div class="fast-stat-card-top">
-                  <div class="fast-primary-stat">
-                    <small>Carbs today</small>
-                    <span id="statCarbs">0g</span>
-                  </div>
-                  <div class="fast-mini-stats">
-                    <div>
-                      <span id="statToday">0</span>
-                      <small>Entries</small>
-                    </div>
-                    <div>
-                      <span id="statTotal">0</span>
-                      <small>Total</small>
-                    </div>
-                  </div>
-                </div>
-                <div class="fast-message-card">
-                  <p id="fastMessage">Ready. Photo, slide, or tap a Turbo Log card.</p>
-                  <div class="fast-active-stat">
-                    <span id="statActive">0</span>
-                    <small>Active</small>
-                  </div>
-                  <div class="fast-history-actions" aria-label="History actions">
-                    <button class="fast-history-button" id="fastUndoBtn" type="button" aria-label="Undo" title="Undo">↶</button>
-                    <button class="fast-history-button" id="fastRedoBtn" type="button" aria-label="Redo" title="Redo">↷</button>
-                  </div>
-                </div>
-              </section>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="stage">
+    <header class="stage-head">
+      <div>
+        <div class="kicker">FASTTRACK · 01 DENNÍK</div>
+        <h1>Denník — kompletný flow</h1>
+      </div>
+      <div class="legend">
+        <span><b>Hlavná</b> · timeline + Turbo Log</span>
+        <span><b>Záznamy</b> · chronológia s filtrami</span>
+        <span><b>Camera AI</b> · snap → odhad → potvrdiť</span>
+        <span><b>Detail sheet</b> · pre každú kategóriu</span>
+      </div>
+    </header>
 
-              <section class="turbo-log" aria-label="Turbo Log">
-                <h2>Turbo Log</h2>
-                <div class="turbo-strip">
-                  <button class="turbo-card" data-turbo-subtype="beer" type="button">
-                    <span>Beer</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="wine" type="button">
-                    <span>Vino</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="coffee" type="button">
-                    <span>Coffee</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="kuluri" type="button">
-                    <span>Kuluri</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="bread" type="button">
-                    <span>Bread</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="fruit" type="button">
-                    <span>Fruit</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="junk" type="button">
-                    <span>Junk</span>
-                  </button>
-                  <button class="turbo-card" data-turbo-subtype="stress" type="button">
-                    <span>Stress</span>
-                  </button>
-                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="exercise" type="button">
-                    <span>Exercise</span>
-                  </button>
-                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="nap" type="button">
-                    <span>Nap</span>
-                  </button>
-                  <button class="turbo-card turbo-toggle-card" data-turbo-timer-type="party" type="button">
-                    <span>Party</span>
-                  </button>
-                </div>
-              </section>
+    <main id="root"></main>
 
-              <nav class="fast-bottom-nav" aria-label="Quick sections">
-                <button class="fast-nav-item is-active" data-fast-nav="main" data-category-target="main" type="button" aria-label="Main Board">
-                  <svg class="fast-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <rect x="4" y="4" width="6" height="6" rx="1.5"></rect>
-                    <rect x="14" y="4" width="6" height="6" rx="1.5"></rect>
-                    <rect x="4" y="14" width="6" height="6" rx="1.5"></rect>
-                    <rect x="14" y="14" width="6" height="6" rx="1.5"></rect>
-                  </svg>
-                  <svg class="fast-nav-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7 10l5 5 5-5"></path>
-                  </svg>
-                </button>
-                <button class="fast-nav-item" data-fast-nav="records" id="fastRecordsBtn" type="button" aria-label="Records" title="Records">
-                  <svg class="fast-nav-icon" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M5 7h14"></path>
-                    <path d="M5 12h14"></path>
-                    <path d="M5 17h14"></path>
-                  </svg>
-                  <svg class="fast-nav-arrow" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d="M7 14l5-5 5 5"></path>
-                  </svg>
-                </button>
-              </nav>
-            </div>
-          </section>
+    <footer class="stage-foot">
+      Klikaj nech preskúšaš. Camera vľavo dole, Turbo karty pridajú event jedným ťukom, dlhý ťuk otvorí detail. Hore prepneš deň.
+    </footer>
+  </div>
 
-          <section class="category-panel" data-category-panel="food" aria-label="Food events">
-            <p class="category-kicker">Food</p>
-            <div class="event-stack food-stack">
-              <button class="action" data-inline-choice="carbs" type="button" aria-expanded="false">
-                <span>Carbs</span>
-                <small>rice, potato, pasta + size</small>
-              </button>
-              <div class="inline-choices" id="carbsInlineChoices" hidden>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="rice" type="button">
-                  <span>Rice</span>
-                  <small>slide S / M / L / XL</small>
-                </button>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="potato" type="button">
-                  <span>Potato</span>
-                  <small>slide S / M / L / XL</small>
-                </button>
-                <button class="secondary choice-slider inline-choice-slider" data-carb-subtype="pasta" type="button">
-                  <span>Pasta</span>
-                  <small>slide S / M / L / XL</small>
-                </button>
-              </div>
-              <button class="action state-action" data-carb-portion-subtype="bread" type="button">
-                <span>Bread</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-              <button class="action state-action" data-carb-portion-subtype="kuluri" type="button">
-                <span>Kuluri</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-              <button class="action state-action" data-carb-portion-subtype="sweets" type="button">
-                <span>Sweets</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-              <button class="action state-action" data-carb-portion-subtype="snack" type="button">
-                <span>Snack</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-              <button class="action state-action" data-carb-portion-subtype="fruit" type="button">
-                <span>Fruit</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-              <button class="action state-action" data-carb-portion-subtype="junk" type="button">
-                <span>Junk food</span>
-                <small>hold and slide for S / M / L / XL</small>
-              </button>
-            </div>
-          </section>
-
-          <section class="category-panel" data-category-panel="drink" aria-label="Drink events">
-            <p class="category-kicker">Drink</p>
-            <div class="event-stack">
-              <button class="action" data-instant-type="beer" type="button">
-                <span>Beer</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="wine" type="button">
-                <span>Wine</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="spirits" type="button">
-                <span>Spirits</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="coffee" type="button">
-                <span>Coffee</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="soda" type="button">
-                <span>Soda</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="juice" type="button">
-                <span>Juice</span>
-                <small>instant</small>
-              </button>
-              <button class="action" data-instant-type="protein" type="button">
-                <span>Protein</span>
-                <small>protein shake after workout</small>
-              </button>
-            </div>
-          </section>
-
-          <section class="category-panel" data-category-panel="activity" aria-label="Activity events">
-            <p class="category-kicker">Duration</p>
-            <div class="event-stack">
-              <button class="duration-action" data-timer-type="exercise" data-label="Exercise" type="button">
-                <span>Exercise</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="walk" data-label="Walk" type="button">
-                <span>Walk</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="nap" data-label="Nap" type="button">
-                <span>Nap</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action party-mini" data-timer-type="party" data-label="Party" type="button">
-                <span>Party</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="sex" data-label="Sex" type="button">
-                <span>Sex</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="travel" data-label="Travel" type="button">
-                <span>Travel</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="drugs" data-label="Drugs" type="button">
-                <span>Drugs</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="sleep_good" data-label="Good sleep" type="button">
-                <span>Sleep good</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="sleep_bad" data-label="Bad sleep" type="button">
-                <span>Sleep bad</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-              <button class="duration-action" data-timer-type="sleep_short" data-label="Short sleep" type="button">
-                <span>Sleep short</span>
-                <strong>▶ START</strong>
-                <small></small>
-              </button>
-            </div>
-          </section>
-
-          <section class="category-panel" data-category-panel="mood" aria-label="Mood events">
-            <p class="category-kicker">Mood</p>
-            <div class="event-stack">
-              <button class="action state-action" data-intensity-type="stress" type="button">
-                <span>Stress</span>
-                <small>hold and slide for S / M / L</small>
-              </button>
-              <button class="action state-action" data-intensity-type="frustration" type="button">
-                <span>Frustration</span>
-                <small>hold and slide for S / M / L</small>
-              </button>
-              <button class="action state-action" data-intensity-type="nervousness" type="button">
-                <span>Nervousness</span>
-                <small>hold and slide for S / M / L</small>
-              </button>
-              <button class="action state-action" data-intensity-type="happy" type="button">
-                <span>Happy</span>
-                <small>hold and slide for S / M / L</small>
-              </button>
-              <button class="action state-action" data-intensity-type="sick" type="button">
-                <span>Sick</span>
-                <small>hold and slide for S / M / L</small>
-              </button>
-            </div>
-          </section>
-
-          <section class="status-panel" aria-live="polite" aria-label="App status">
-            <div class="status-head">
-              <div class="status-chips" aria-label="Connection status">
-                <span class="status-chip" id="networkStatus">Online</span>
-                <span class="status-chip" id="dbStatus">DB ready</span>
-              </div>
-              <div class="status-actions" aria-label="Step actions">
-                <button class="status-step icon-only" id="undoBtn" type="button" aria-label="Step back" title="Step back">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 8H4v5"/><path d="M4 8c2.6-2.8 6.8-3.5 10.1-1.7 3.6 2 5 6.5 3 10.1-1 1.8-2.6 3.1-4.5 3.6"/></svg>
-                  <span class="sr-only">Step back</span>
-                </button>
-                <button class="status-step icon-only" id="recoverBtn" type="button" aria-label="Recover last deleted entry" title="Recover">
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 8h5v5"/><path d="M20 8c-2.6-2.8-6.8-3.5-10.1-1.7-3.6 2-5 6.5-3 10.1 1 1.8 2.6 3.1 4.5 3.6"/></svg>
-                  <span class="sr-only">Recover</span>
-                </button>
-              </div>
-            </div>
-            <p id="statusText">Ready. Choose a category and tap an event.</p>
-          </section>
-        </section>
-
-        <nav class="category-rail" aria-label="Categories">
-          <button class="rail-button is-active" data-category-target="main" type="button" aria-label="Main" title="Main">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 1 16 0"/><path d="M12 12l4-4"/><path d="M7 17h10"/></svg>
-            <span class="rail-label">MAIN</span>
-          </button>
-          <button class="rail-button camera-rail-button" data-ai-carbs type="button" aria-label="Camera" title="Camera">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>
-            <span class="rail-label">CAMERA</span>
-          </button>
-          <button class="rail-button" data-category-target="food" type="button" aria-label="Food" title="Food">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v8"/><path d="M11 3v8"/><path d="M7 7h4"/><path d="M9 11v10"/><path d="M16 3v18"/><path d="M16 3c2 1.8 3 4 3 7v1h-3"/></svg>
-            <span class="rail-label">JEDLO</span>
-          </button>
-          <button class="rail-button" data-category-target="drink" type="button" aria-label="Drink" title="Drink">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12l-1 7a5 5 0 0 1-10 0L6 3Z"/><path d="M12 15v6"/><path d="M8 21h8"/></svg>
-            <span class="rail-label">PITIE</span>
-          </button>
-          <button class="rail-button" data-category-target="activity" type="button" aria-label="Activities" title="Activities">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 18V8"/><path d="M19 18V8"/><path d="M3 14h4"/><path d="M17 14h4"/><path d="M7 10h10"/><path d="M7 16h10"/></svg>
-            <span class="rail-label">AKTIVITY</span>
-          </button>
-          <button class="rail-button" data-category-target="mood" type="button" aria-label="Mood" title="Mood">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M8.5 10h.01"/><path d="M15.5 10h.01"/><path d="M8.5 15c1.7 1.2 5.3 1.2 7 0"/></svg>
-            <span class="rail-label">NÁLADA</span>
-          </button>
-        </nav>
-      </section>
-
-      <section class="log-panel" id="logPanel">
-        <div class="panel-head">
-          <h2>Records</h2>
-          <div class="panel-actions" aria-label="Records actions">
-            <button class="record-action" id="exportBtn" type="button" aria-label="Export CSV" title="Export CSV">CSV</button>
-            <button class="text-button" id="clearBtn" type="button">Clear</button>
-          </div>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Time</th>
-                <th>Event</th>
-                <th>Note</th>
-                <th></th>
-                <th>Duration</th>
-              </tr>
-            </thead>
-            <tbody id="logBody"></tbody>
-          </table>
-        </div>
-      </section>
-    </main>
-
-    <dialog id="noteDialog">
-      <form method="dialog" class="dialog-card">
-        <h2>Note</h2>
-        <textarea id="noteText" rows="4" placeholder="Attach note to the last event"></textarea>
-        <div class="dialog-actions">
-          <button class="secondary dialog-secondary" value="cancel">Cancel</button>
-          <button class="primary" id="saveNote" value="default">Save</button>
-        </div>
-      </form>
-    </dialog>
-
-    <dialog id="choiceDialog">
-      <form method="dialog" class="dialog-card">
-        <h2 id="choiceTitle">Choose</h2>
-        <div class="choice-actions" id="choiceActions"></div>
-        <div class="dialog-actions">
-          <button class="secondary dialog-secondary" value="cancel">Cancel</button>
-        </div>
-      </form>
-    </dialog>
-
-    <script src="app.js?v=92"></script>
-  </body>
+  <script type="text/babel" src="dennik.jsx?v=93"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("/sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
 </html>
