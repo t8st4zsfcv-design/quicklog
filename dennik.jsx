@@ -38,10 +38,12 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L', 'XL'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľká · ~60g', XL: 'hostina · ~90g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const STORAGE_KEY = 'fasttrack-diary-events-v1';
+const STORAGE_KEY = 'fasttrack-diary-events-v2';
+const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
 
 function loadLocalEvents() {
   try {
+    LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
     return Array.isArray(parsed) ? parsed : [];
   } catch {
@@ -57,6 +59,12 @@ function currentClock() {
     time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
     hour: h + (m / 60)
   };
+}
+
+function eventSortValue(event) {
+  if (Number.isFinite(event?.hour)) return event.hour;
+  const [h = 0, m = 0] = String(event?.time || '').split(':').map(Number);
+  return (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60);
 }
 
 function eventDateParts(event) {
@@ -78,7 +86,7 @@ function eventsToCsv(events) {
   const header = ['timestamp_iso', 'date', 'time', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
   const rows = events
     .slice()
-    .sort((a, b) => (a.hour || 0) - (b.hour || 0))
+    .sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0))
     .map((event) => {
       const date = eventDateParts(event);
       return [
@@ -403,7 +411,7 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
-  const sorted = [...visible].sort((a, b) => b.hour - a.hour);
+  const sorted = [...visible].sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0));
 
   return (
     <div className="scroll">
@@ -545,7 +553,7 @@ function App() {
       const item = TURBO.find(t => t.sub === data.sub);
       carbs = item?.carbsByMass?.[data.size];
     }
-    const evt = { id, ...currentClock(), ...data, carbs };
+    const evt = { id, ...currentClock(), createdAt: Date.now(), ...data, carbs };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
     showToast(<>Pridané <b>{evt.label}{evt.size ? ' '+evt.size : ''}</b></>);
@@ -557,7 +565,7 @@ function App() {
   const onStartTimer = (item) => {
     if (runningEvent) return;
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
-    const evt = { id, ...currentClock(), sub: item.sub, label: item.label, cat: item.cat, running: true };
+    const evt = { id, ...currentClock(), createdAt: Date.now(), sub: item.sub, label: item.label, cat: item.cat, running: true };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
     showToast(<><b>{item.label}</b> štart</>);
