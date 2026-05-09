@@ -49,7 +49,6 @@ export async function onRequestPost({ request, env }) {
                   "Estimate visible carbohydrates in this food or drink.",
                   "Return only JSON matching the schema.",
                   "Return total carbohydrate grams only; do not use carbohydrate exchange units.",
-                  "food_name must be a short plain food or drink name, Title Case, e.g. \"Banana\" or \"Rice Pudding\".",
                   "short_note must be one natural English sentence in first person, naming the likely food, e.g. \"It looks like rice pudding.\"",
                   "If unsure, use confidence low and a conservative middle estimate.",
                   "Do not give medical advice."
@@ -80,16 +79,12 @@ export async function onRequestPost({ request, env }) {
                   type: "string",
                   enum: ["low", "medium", "high"]
                 },
-                food_name: {
-                  type: "string",
-                  description: "Short likely visible food or drink name, without quantities."
-                },
                 short_note: {
                   type: "string",
                   description: "One short first-person English sentence naming the likely visible food."
                 }
               },
-              required: ["grams", "confidence", "food_name", "short_note"]
+              required: ["grams", "confidence", "short_note"]
             }
           }
         }
@@ -132,7 +127,6 @@ export async function onRequestPost({ request, env }) {
   return json(200, {
     grams: Number.isFinite(grams) ? grams : 0,
     confidence: ["low", "medium", "high"].includes(parsed.confidence) ? parsed.confidence : "low",
-    food_name: cleanFoodName(parsed.food_name),
     short_note: String(parsed.short_note || "").slice(0, 120),
     model
   });
@@ -177,14 +171,6 @@ function publicOpenAiError(result) {
     error: message.slice(0, 240),
     code
   };
-}
-
-function cleanFoodName(value) {
-  return String(value || "")
-    .replace(/[^\p{L}\p{N}\s'’-]/gu, "")
-    .trim()
-    .replace(/\s+/g, " ")
-    .slice(0, 40);
 }
 
 function json(status, payload) {
