@@ -1,17 +1,17 @@
-// QuickLog Service Worker v93
+// QuickLog Service Worker v94
 // Strategy:
 //   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
 //   - API requests (/api/*): network-only (no caching)
 //   - Other requests: network-first with cache fallback (offline support)
 
-const CACHE_NAME = "quicklog-v93";
-const APP_VERSION = "93";
+const CACHE_NAME = "quicklog-v94";
+const APP_VERSION = "94";
 const CORE_SHELL = [
   "/",
   "/index.html",
-  `/dennik.css?v=${APP_VERSION}`,
-  `/dennik-turbo.css?v=${APP_VERSION}`,
-  `/dennik.jsx?v=${APP_VERSION}`,
+  "/dennik-v94.css",
+  "/dennik-turbo-v94.css",
+  "/dennik-v94.jsx",
   `/manifest.webmanifest?v=${APP_VERSION}`
 ];
 const OPTIONAL_SHELL = [
@@ -27,6 +27,9 @@ const APP_SHELL_PATHS = new Set([
   "/dennik.css",
   "/dennik-turbo.css",
   "/dennik.jsx",
+  "/dennik-v94.css",
+  "/dennik-turbo-v94.css",
+  "/dennik-v94.jsx",
   "/styles.css",
   "/app.js",
   "/manifest.webmanifest"
