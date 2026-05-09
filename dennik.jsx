@@ -99,18 +99,39 @@ function eventsToCsv(events) {
   return [header, ...rows].map((row) => row.map(csvCell).join(',')).join('\n');
 }
 
-function downloadEventsCsv(events) {
+async function downloadEventsCsv(events) {
   const csv = eventsToCsv(events);
   const day = new Date().toISOString().slice(0, 10);
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const filename = `fasttrack-zaznamy-${day}.csv`;
+  const blob = new Blob([`\uFEFF${csv}`], { type: 'text/csv;charset=utf-8' });
+
+  if (navigator.canShare && navigator.share && window.File) {
+    const file = new File([blob], filename, { type: 'text/csv' });
+    if (navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: filename });
+      return 'share';
+    }
+  }
+
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `fasttrack-zaznamy-${day}.csv`;
+  link.download = filename;
+  link.rel = 'noopener';
   document.body.appendChild(link);
   link.click();
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
+    const dataUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+    setTimeout(() => {
+      window.open(dataUrl, '_blank', 'noopener');
+    }, 80);
+    return 'open';
+  }
+
+  return 'download';
 }
 
 function fileToDataUrl(file) {
@@ -568,9 +589,20 @@ function App() {
     if (last.kind === 'delete') setEvents(es => [...es, last.evt]);
     setToast(null);
   };
-  const exportCsv = () => {
-    downloadEventsCsv(events);
-    showToast(events.length ? <>CSV stiahnuté</> : <>CSV stiahnuté bez záznamov</>);
+  const exportCsv = async () => {
+    try {
+      const mode = await downloadEventsCsv(events);
+      if (mode === 'share') {
+        showToast(events.length ? <>CSV pripravené na uloženie</> : <>CSV pripravené bez záznamov</>);
+      } else if (mode === 'open') {
+        showToast(<>CSV otvorené v novom okne</>);
+      } else {
+        showToast(events.length ? <>CSV stiahnuté</> : <>CSV stiahnuté bez záznamov</>);
+      }
+    } catch (error) {
+      if (error?.name === 'AbortError') return;
+      showToast(<>{error.message || 'CSV export zlyhal.'}</>);
+    }
   };
   const openCamera = () => {
     if (cameraBusy) return;
