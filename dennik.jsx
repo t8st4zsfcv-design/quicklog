@@ -3,19 +3,21 @@ const { useState, useEffect, useRef } = React;
 // ====== Subtypes from QuickLog data model ======
 const TURBO = [
   // food
-  { sub: 'kuluri', cat: 'food', label: 'Kuluri', carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'bread',  cat: 'food', label: 'Bread',  carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'rice',   cat: 'food', label: 'Rice',   carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'pasta',  cat: 'food', label: 'Pasta',  carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'potato', cat: 'food', label: 'Potato', carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'sweets', cat: 'food', label: 'Sweets', carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'snack',  cat: 'food', label: 'Snack',  carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'fruit',  cat: 'food', label: 'Fruit',  carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
-  { sub: 'junk',   cat: 'food', label: 'Junk',   carbsByMass: { S: 15, M: 30, L: 60, XL: 90 } },
+  { sub: 'kuluri', cat: 'food', label: 'Kuluri', carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'bread',  cat: 'food', label: 'Bread',  carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'rice',   cat: 'food', label: 'Rice',   carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'pasta',  cat: 'food', label: 'Pasta',  carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'potato', cat: 'food', label: 'Potato', carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'sweets', cat: 'food', label: 'Sweets', carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'snack',  cat: 'food', label: 'Snack',  carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'fruit',  cat: 'food', label: 'Fruit',  carbsByMass: { S: 15, M: 30, L: 60 } },
+  { sub: 'junk',   cat: 'food', label: 'Junk',   carbsByMass: { S: 15, M: 30, L: 60 } },
   // drink
   { sub: 'coffee',  cat: 'drink', label: 'Coffee' },
+  { sub: 'water',   cat: 'drink', label: 'Voda' },
   { sub: 'beer',    cat: 'drink', label: 'Beer' },
   { sub: 'wine',    cat: 'drink', label: 'Wine' },
+  { sub: 'poldeci', cat: 'drink', label: 'Poldeci' },
   { sub: 'spirits', cat: 'drink', label: 'Spirits' },
   { sub: 'soda',    cat: 'drink', label: 'Soda' },
   { sub: 'juice',   cat: 'drink', label: 'Juice' },
@@ -35,10 +37,10 @@ const TURBO = [
   { sub: 'travel',   cat: 'activity', label: 'Travel',   timer: true },
 ];
 
-const SIZES = ['S', 'M', 'L', 'XL'];
-const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľká · ~60g', XL: 'hostina · ~90g+' };
+const SIZES = ['S', 'M', 'L'];
+const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '110';
+const APP_VERSION = '116';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -48,12 +50,16 @@ const AI_IMAGE_STEPS = [
 ];
 const STORAGE_KEY = 'fasttrack-diary-events-v2';
 const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
+const LEGACY_EXTRA_SIZE = ['X', 'L'].join('');
 
 function loadLocalEvents() {
   try {
     LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed : [];
+    return Array.isArray(parsed) ? parsed.map((event) => ({
+      ...event,
+      size: event?.size === LEGACY_EXTRA_SIZE ? 'L' : event?.size
+    })) : [];
   } catch {
     return [];
   }
@@ -74,16 +80,24 @@ function currentHour() {
   return now.getHours() + (now.getMinutes() / 60) + (now.getSeconds() / 3600);
 }
 
+function formatHour(hour) {
+  const normalized = Math.max(0, Math.min(23.99, Number(hour) || 0));
+  const totalMinutes = Math.min(1439, Math.max(0, Math.round(normalized * 60)));
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
 function eventSortValue(event) {
   if (Number.isFinite(event?.hour)) return event.hour;
   const [h = 0, m = 0] = String(event?.time || '').split(':').map(Number);
   return (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60);
 }
 
-function eventDateParts(event) {
+function eventDateParts(event, hourOverride = eventSortValue(event)) {
   const date = new Date();
-  const [h = 0, m = 0] = String(event.time || '').split(':').map(Number);
-  date.setHours(Number.isFinite(h) ? h : 0, Number.isFinite(m) ? m : 0, 0, 0);
+  const totalMinutes = Math.min(1439, Math.max(0, Math.round((Number(hourOverride) || 0) * 60)));
+  date.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
   const yyyy = date.getFullYear();
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
@@ -96,16 +110,24 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp_iso', 'date', 'time', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
+  const header = ['timestamp_iso', 'date', 'time', 'start_time', 'end_time', 'start_timestamp_iso', 'end_timestamp_iso', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
   const rows = events
     .slice()
     .sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0))
     .map((event) => {
-      const date = eventDateParts(event);
+      const startHour = eventSortValue(event);
+      const durationHours = event.duration ? event.duration / 60 : 0;
+      const endHour = event.cat === 'activity' && event.duration ? Math.min(23.99, startHour + durationHours) : '';
+      const date = eventDateParts(event, startHour);
+      const endDate = endHour === '' ? null : eventDateParts(event, endHour);
       return [
         date.iso,
         date.day,
         event.time,
+        formatHour(startHour),
+        endHour === '' ? '' : formatHour(endHour),
+        date.iso,
+        endDate?.iso || '',
         event.cat,
         event.sub,
         event.label,
@@ -260,7 +282,7 @@ function Timeline({ events }) {
   const project = (h) => Math.max(0, Math.min(100, ((h - 6) / 18) * 100));
   const heightFor = (e) => {
     if (e.cat === 'activity') return 18;
-    const map = { S: 18, M: 30, L: 44, XL: 56 };
+    const map = { S: 18, M: 30, L: 44 };
     return map[e.size] || 24;
   };
   return (
@@ -276,27 +298,27 @@ function Timeline({ events }) {
   );
 }
 
-// ====== Horizontal drag card (L→R for S/M/L/XL) ======
-function DragCard({ item, onLog }) {
+// ====== Step drag card (S/M/L) ======
+function DragCard({ item, onLog, direction = 'horizontal' }) {
   const [dragging, setDragging] = useState(false);
   const [sizeIdx, setSizeIdx] = useState(0);
-  const startX = useRef(null);
+  const startPoint = useRef(null);
   const pctRef = useRef(0);
   const sizeIdxRef = useRef(0);
   const pointerIdRef = useRef(null);
-  const widthRef = useRef(200);
+  const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
+  const isVertical = direction === 'vertical';
 
   const computeIdx = (p) => {
-    if (p < 0.25) return 0;
-    if (p < 0.5)  return 1;
-    if (p < 0.75) return 2;
-    return 3;
+    if (p < 1 / 3) return 0;
+    if (p < 2 / 3) return 1;
+    return 2;
   };
 
   const resetDrag = () => {
-    startX.current = null;
+    startPoint.current = null;
     pointerIdRef.current = null;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
@@ -304,9 +326,10 @@ function DragCard({ item, onLog }) {
     setSizeIdx(0);
   };
 
-  const updateDrag = (clientX) => {
-    if (startX.current == null) return;
-    const p = Math.min(1, Math.max(0, (clientX - startX.current) / widthRef.current));
+  const updateDrag = (event) => {
+    if (startPoint.current == null) return;
+    const delta = isVertical ? startPoint.current - event.clientY : event.clientX - startPoint.current;
+    const p = Math.min(1, Math.max(0, delta / spanRef.current));
     const idx = computeIdx(p);
     pctRef.current = p;
     sizeIdxRef.current = idx;
@@ -316,9 +339,9 @@ function DragCard({ item, onLog }) {
   const onPointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0) return;
     e.preventDefault();
-    startX.current = e.clientX;
+    startPoint.current = isVertical ? e.clientY : e.clientX;
     pointerIdRef.current = e.pointerId;
-    widthRef.current = ref.current?.offsetWidth || 200;
+    spanRef.current = isVertical ? (ref.current?.offsetHeight || 160) : (ref.current?.offsetWidth || 200);
     pctRef.current = 0;
     sizeIdxRef.current = 0;
     ref.current?.setPointerCapture?.(e.pointerId);
@@ -328,12 +351,12 @@ function DragCard({ item, onLog }) {
   const onPointerMove = (e) => {
     if (pointerIdRef.current !== e.pointerId) return;
     e.preventDefault();
-    updateDrag(e.clientX);
+    updateDrag(e);
   };
   const onPointerUp = (e) => {
     if (pointerIdRef.current !== e.pointerId) return;
     e.preventDefault();
-    updateDrag(e.clientX);
+    updateDrag(e);
     ref.current?.releasePointerCapture?.(e.pointerId);
     if (pctRef.current >= minCommitPct) {
       onLog({ ...item, size: SIZES[sizeIdxRef.current] });
@@ -345,13 +368,13 @@ function DragCard({ item, onLog }) {
     resetDrag();
   };
 
-  const fillPct = dragging ? (sizeIdx + 1) * 25 : 0;
+  const fillPct = dragging ? ((sizeIdx + 1) / SIZES.length) * 100 : 0;
   const currentSize = dragging ? SIZES[sizeIdx] : null;
 
   return (
     <div
       ref={ref}
-      className={`tcard drag ${dragging ? 'dragging' : ''} cat-${item.cat}`}
+      className={`tcard drag ${isVertical ? 'vertical' : 'horizontal'} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
       data-size={currentSize || ''}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -412,7 +435,7 @@ function TimerCard({ item, runningEvent, onStart, onStop }) {
   );
 }
 
-// Mood card — same as DragCard but smaller, single-tap (no size needed but keeps S/M/L/XL feel)
+// Mood card — same as DragCard but smaller, single-tap (no size needed but keeps S/M/L feel)
 function MoodCard({ item, onLog }) {
   return <DragCard item={item} onLog={onLog} />;
 }
@@ -428,7 +451,7 @@ function LiveTimer({ startHour }) {
 
 function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
   const featuredFood = ['kuluri', 'bread', 'sweets', 'fruit'];
-  const featuredDrink = ['coffee', 'beer', 'wine'];
+  const featuredDrink = ['water', 'coffee', 'beer', 'wine', 'poldeci'];
   const featuredMood = ['stress', 'happy', 'nervousness'];
 
   const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
@@ -450,7 +473,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
 
       <div className="section-title">
         <h3>Jedlo</h3>
-        <small>POTIAHNI VPRAVO PRE S · M · L · XL</small>
+        <small>POTIAHNI VPRAVO PRE S · M · L</small>
       </div>
       <div className="turbo-grid">
         {foodItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
@@ -458,10 +481,10 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
 
       <div className="section-title" style={{marginTop: 18}}>
         <h3>Pitie</h3>
-        <small>POTIAHNI VPRAVO</small>
+        <small>POTIAHNI HORE PRE S · M · L</small>
       </div>
-      <div className="turbo-grid three">
-        {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
+      <div className="turbo-grid drink-vertical">
+        {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} direction="vertical"/>)}
       </div>
 
       <div className="section-title" style={{marginTop: 18}}>
@@ -487,7 +510,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
 }
 
 // ====== Records ======
-function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
+function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
@@ -508,7 +531,10 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
       </div>
       <div className="rec-rail">
         {sorted.length === 0 && <div className="rec-empty">Žiadne záznamy</div>}
-        {sorted.map((e) => (
+        {sorted.map((e) => {
+          const timeStep = e.cat === 'activity' ? 5 : 10;
+          const durationValue = Math.max(5, e.duration || 5);
+          return (
           <React.Fragment key={e.id}>
             <button className={`rec-row is-button ${e.cat}`} onClick={() => setOpenId(openId === e.id ? null : e.id)}>
               <span className="rec-time">{e.time}</span>
@@ -521,7 +547,7 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
               {e.running && <span className="rec-size run">RUN</span>}
             </button>
             {openId === e.id && (
-              <div className="rec-detail">
+              <div className={`rec-detail detail-${e.cat}`}>
                 <div className="row">
                   <span className="lbl">Detail</span>
                   <span className="val">{e.label}{e.size ? ` · ${e.size}` : ''}{e.carbs ? ` · ${e.carbs}g` : ''}</span>
@@ -529,11 +555,21 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
                 <div>
                   <div className="lbl" style={{marginBottom: 8}}>Posuň čas záznamu</div>
                   <div className="time-adjust">
-                    <button className="tbtn" onClick={() => onAdjustTime(e.id, -10)}>−10 min</button>
+                    <button className="tbtn" onClick={() => onAdjustTime(e.id, -timeStep)}>−{timeStep} min</button>
                     <div className="now-time">{e.time}</div>
-                    <button className="tbtn" onClick={() => onAdjustTime(e.id, +10)}>+10 min</button>
+                    <button className="tbtn" onClick={() => onAdjustTime(e.id, +timeStep)}>+{timeStep} min</button>
                   </div>
                 </div>
+                {e.cat === 'activity' && !e.running && (
+                  <div>
+                    <div className="lbl" style={{marginBottom: 8}}>Dĺžka záznamu</div>
+                    <div className="time-adjust duration-adjust">
+                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, -5)}>−5 min</button>
+                      <div className="now-time">{durationValue} min</div>
+                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, +5)}>+5 min</button>
+                    </div>
+                  </div>
+                )}
                 <div className="actions">
                   <button className="btn btn-ghost" onClick={() => setOpenId(null)}>Zavrieť</button>
                   <button className="btn btn-danger" onClick={() => { onDelete(e.id); setOpenId(null); }}>Zmazať</button>
@@ -541,7 +577,8 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
               </div>
             )}
           </React.Fragment>
-        ))}
+          );
+        })}
       </div>
       <div style={{height: 24}}/>
     </div>
@@ -605,7 +642,7 @@ function App() {
   const onStopTimer = (id) => {
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
-      const duration = Math.max(1, Math.round((currentHour() - e.hour) * 60));
+      const duration = Math.max(5, Math.round((currentHour() - e.hour) * 60));
       return { ...e, running: false, ended: true, duration };
     }));
     showToast(<>Timer zastavený</>);
@@ -614,9 +651,14 @@ function App() {
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
       const newHour = Math.max(0, Math.min(23.99, e.hour + deltaMin / 60));
-      const h = Math.floor(newHour);
-      const m = Math.round((newHour - h) * 60);
-      return { ...e, hour: newHour, time: `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}` };
+      return { ...e, hour: newHour, time: formatHour(newHour) };
+    }));
+  };
+  const onAdjustDuration = (id, deltaMin) => {
+    setEvents(es => es.map(e => {
+      if (e.id !== id || e.cat !== 'activity') return e;
+      const current = Math.max(5, e.duration || 5);
+      return { ...e, duration: Math.max(5, current + deltaMin) };
     }));
   };
   const onDelete = (id) => {
@@ -709,7 +751,7 @@ function App() {
           onStopTimer={onStopTimer}
         />
       )}
-      {view === 'records' && <Records events={events} onAdjustTime={onAdjustTime} onDelete={onDelete} onExportCsv={exportCsv}/>}
+      {view === 'records' && <Records events={events} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
 
       <div className="bottom-bar simple">
         <button className="fab-cam" onClick={openCamera} disabled={cameraBusy} aria-label="Otvoriť kameru"><Icon.Cam/></button>

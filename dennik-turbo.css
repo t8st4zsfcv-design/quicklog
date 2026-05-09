@@ -1,5 +1,5 @@
 /* ============================================
-   Turbo cards — horizontal drag L→R for S/M/L/XL
+   Turbo cards — step drag for S/M/L
    ============================================ */
 .turbo-grid {
   display: grid;
@@ -8,6 +8,17 @@
   padding: 0 18px;
 }
 .turbo-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+.turbo-grid.drink-vertical {
+  display: flex;
+  grid-template-columns: none;
+  gap: 8px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
+}
+.turbo-grid.drink-vertical::-webkit-scrollbar { display: none; }
 .turbo-grid.timers { grid-template-columns: 1fr 1fr 1fr; }
 
 .tcard.drag, .tcard.timer-card {
@@ -34,6 +45,15 @@
 }
 .tcard.drag:hover, .tcard.timer-card:hover { background: rgba(255,255,255,0.08); }
 .tcard.drag.dragging { background: rgba(255,255,255,0.06); }
+.tcard.drag.vertical {
+  grid-template-columns: 1fr;
+  align-items: end;
+  flex: 0 0 70px;
+  width: 70px;
+  min-height: 148px;
+  padding: 14px 8px;
+  scroll-snap-align: start;
+}
 
 /* Horizontal fill — left to right */
 .tcard-fill {
@@ -47,9 +67,17 @@
   pointer-events: none;
 }
 .tcard.drag.dragging .tcard-fill { opacity: 0.5; }
-.tcard.drag.dragging[data-size="XL"] .tcard-fill { opacity: 0.9; }
+.tcard.drag.dragging[data-size="L"] .tcard-fill { opacity: 0.9; }
+.tcard.drag.vertical .tcard-fill {
+  top: auto;
+  right: 0;
+  width: auto;
+  height: var(--fill, 0%);
+  background: linear-gradient(0deg, var(--peach) 0%, var(--peach-2) 100%);
+  transition: height 0.12s ease-out;
+}
 
-/* size threshold tick marks at 25/50/75% */
+/* size threshold tick marks at thirds */
 .tcard-ticks {
   position: absolute;
   top: 0; bottom: 0;
@@ -58,17 +86,30 @@
   z-index: 1;
 }
 .tcard.drag.dragging .tcard-ticks::before,
-.tcard.drag.dragging .tcard-ticks::after,
-.tcard.drag.dragging .tcard-ticks > i {
+.tcard.drag.dragging .tcard-ticks::after {
   content: '';
   position: absolute;
   top: 30%; bottom: 30%;
   width: 1px;
   background: rgba(22,32,31,0.18);
 }
-.tcard.drag.dragging .tcard-ticks::before { left: 25%; }
-.tcard.drag.dragging .tcard-ticks > i { left: 50%; }
-.tcard.drag.dragging .tcard-ticks::after { left: 75%; }
+.tcard.drag.dragging .tcard-ticks::before { left: 33.333%; }
+.tcard.drag.dragging .tcard-ticks::after { left: 66.666%; }
+.tcard.drag.vertical.dragging .tcard-ticks::before,
+.tcard.drag.vertical.dragging .tcard-ticks::after {
+  left: 18%;
+  right: 18%;
+  width: auto;
+  height: 1px;
+}
+.tcard.drag.vertical.dragging .tcard-ticks::before {
+  top: auto;
+  bottom: 33.333%;
+}
+.tcard.drag.vertical.dragging .tcard-ticks::after {
+  top: auto;
+  bottom: 66.666%;
+}
 
 .tcard-body, .tcard-right { position: relative; z-index: 2; }
 
@@ -102,6 +143,20 @@
 }
 .tcard.drag.dragging .name { color: #16201f; }
 .tcard.drag.dragging .tcard-meta { color: rgba(22,32,31,0.6); }
+.tcard.drag.vertical .tcard-body {
+  align-self: end;
+  width: 100%;
+}
+.tcard.drag.vertical .name {
+  font-size: 13px;
+  line-height: 1.05;
+  white-space: nowrap;
+}
+.tcard.drag.vertical .tcard-right {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+}
 
 /* size ladder (rest state) */
 .size-ladder {
@@ -111,6 +166,11 @@
   font-size: 9px;
   letter-spacing: 0.1em;
   color: rgba(247,244,237,0.3);
+}
+.tcard.drag.vertical .size-ladder {
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 3px;
 }
 
 /* size pop (during drag) */
@@ -230,6 +290,10 @@
   font-size: 18px;
   letter-spacing: -0.02em;
   padding: 0 18px;
+}
+.rec-detail.detail-activity .time-adjust .now-time {
+  background: var(--green);
+  color: #f7f4ed;
 }
 .rec-detail .actions {
   display: grid;
