@@ -156,6 +156,20 @@ function fileToDataUrl(file) {
   });
 }
 
+function labelFromAiResult(result) {
+  const direct = String(result?.food_name || '').trim();
+  if (direct) return direct.slice(0, 40);
+
+  const note = String(result?.short_note || '').trim();
+  const match = note.match(/(?:looks like|appears to be|seems to be|is)\s+(?:a |an |some )?([^.;,]+)/i);
+  if (!match) return 'AI foto';
+  return match[1]
+    .trim()
+    .replace(/\s+/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase())
+    .slice(0, 40);
+}
+
 const Icon = {
   Cam: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>,
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
@@ -437,7 +451,7 @@ function Records({ events, onAdjustTime, onDelete, onExportCsv }) {
               <span className={`cat-dot rec-row-dot dot-${e.cat}`} />
               <div>
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
-                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.duration ? ` · ${e.duration}m` : ''}</div>
+                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}</div>
               </div>
               {e.size && <span className="rec-size">{e.size}</span>}
               {e.running && <span className="rec-size run">RUN</span>}
@@ -586,9 +600,10 @@ function App() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.error || 'AI odhad zlyhal.');
       const grams = Math.max(0, Math.round(Number(result.grams) || 0));
+      const label = labelFromAiResult(result);
       addEvent({
         sub: 'photo',
-        label: 'AI foto',
+        label,
         cat: 'food',
         carbs: grams,
         confidence: result.confidence,
