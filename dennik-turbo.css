@@ -251,7 +251,7 @@
 .rec-detail .actions .btn-danger { background: rgba(255, 68, 47, 0.16); color: #ff8978; }
 .rec-detail .actions .btn-danger:hover { background: rgba(255, 68, 47, 0.24); }
 
-.bottom-bar.simple { grid-template-columns: auto 1fr 38px; }
+.bottom-bar.simple { grid-template-columns: auto 1fr auto; }
 
 /* Records screen — compact timeline list */
 .rec-head {

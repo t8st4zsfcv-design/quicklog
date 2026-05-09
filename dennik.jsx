@@ -38,6 +38,14 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L', 'XL'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľká · ~60g', XL: 'hostina · ~90g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
+const APP_VERSION = '110';
+const AI_IMAGE_TARGET_BYTES = 4_200_000;
+const AI_IMAGE_STEPS = [
+  { maxSide: 1600, quality: 0.82 },
+  { maxSide: 1400, quality: 0.78 },
+  { maxSide: 1200, quality: 0.74 },
+  { maxSide: 1024, quality: 0.7 }
+];
 const STORAGE_KEY = 'fasttrack-diary-events-v2';
 const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
 
@@ -156,6 +164,61 @@ function fileToDataUrl(file) {
   });
 }
 
+function blobToDataUrl(blob) {
+  return fileToDataUrl(blob);
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Fotku sa nepodarilo pripraviť pre AI.'));
+    };
+    image.src = url;
+  });
+}
+
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (blob) resolve(blob);
+      else reject(new Error('Fotku sa nepodarilo skomprimovať.'));
+    }, 'image/jpeg', quality);
+  });
+}
+
+async function imageToAiDataUrl(file) {
+  const image = await loadImage(file);
+  const sourceWidth = image.naturalWidth || image.width;
+  const sourceHeight = image.naturalHeight || image.height;
+  if (!sourceWidth || !sourceHeight) throw new Error('Fotka nemá čitateľné rozmery.');
+
+  let fallbackDataUrl = null;
+  for (const step of AI_IMAGE_STEPS) {
+    const scale = Math.min(1, step.maxSide / Math.max(sourceWidth, sourceHeight));
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d', { alpha: false });
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    ctx.drawImage(image, 0, 0, width, height);
+    const blob = await canvasToBlob(canvas, step.quality);
+    const dataUrl = await blobToDataUrl(blob);
+    fallbackDataUrl = dataUrl;
+    if (dataUrl.length < AI_IMAGE_TARGET_BYTES) return dataUrl;
+  }
+  return fallbackDataUrl;
+}
+
 function labelFromAiResult(result) {
   const direct = String(result?.food_name || '').trim();
   if (direct) return direct.slice(0, 40);
@@ -172,6 +235,7 @@ function labelFromAiResult(result) {
 
 const Icon = {
   Cam: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>,
+  Refresh: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 5v6h-6"/></svg>,
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
 };
 
@@ -588,13 +652,18 @@ function App() {
     if (cameraBusy) return;
     cameraInputRef.current?.click();
   };
+  const refreshApp = () => {
+    showToast(<>Obnovujem appku · v{APP_VERSION}</>);
+    setTimeout(() => window.location.reload(), 120);
+  };
   const onCameraFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
     setCameraBusy(true);
-    showToast(<>AI analyzuje fotku…</>);
+    showToast(<>Pripravujem fotku pre AI…</>);
     try {
-      const image = await fileToDataUrl(file);
+      const image = await imageToAiDataUrl(file);
+      showToast(<>AI analyzuje fotku…</>);
       const response = await fetch('/api/estimate-carbs', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -656,7 +725,10 @@ function App() {
           <button className={view==='home'?'on':''} onClick={() => setView('home')}>Hlavná</button>
           <button className={view==='records'?'on':''} onClick={() => setView('records')}>Záznamy</button>
         </div>
-        <span style={{width: 38}}/>
+        <button className="refresh-meta" onClick={refreshApp} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
+          <Icon.Refresh/>
+          <span>v{APP_VERSION}</span>
+        </button>
       </div>
 
       {toast && (
