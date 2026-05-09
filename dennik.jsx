@@ -509,7 +509,10 @@ function App() {
     } catch {}
   }, [events]);
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(t => t === msg ? null : t), 2600); };
+  const showToast = (msg, duration = 2600) => {
+    setToast(msg);
+    setTimeout(() => setToast(t => t === msg ? null : t), duration);
+  };
 
   const addEvent = (data) => {
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
@@ -597,8 +600,14 @@ function App() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ image })
       });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.error || 'AI odhad zlyhal.');
+      const isJson = (response.headers.get('content-type') || '').includes('application/json');
+      const result = isJson ? await response.json().catch(() => ({})) : {};
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('AI API nie je dostupné na tejto adrese. Použi Cloudflare deploy, nie lokálny statický server.');
+        }
+        throw new Error(result.error || `AI odhad zlyhal (${response.status}).`);
+      }
       const grams = Math.max(0, Math.round(Number(result.grams) || 0));
       const label = labelFromAiResult(result);
       addEvent({
@@ -611,7 +620,7 @@ function App() {
         source: 'camera-ai'
       });
     } catch (error) {
-      showToast(<>{error.message || 'Fotka sa nepodarila spracovať.'}</>);
+      showToast(<>{error.message || 'Fotka sa nepodarila spracovať.'}</>, 7000);
     } finally {
       setCameraBusy(false);
       event.target.value = '';
