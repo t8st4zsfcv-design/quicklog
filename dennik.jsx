@@ -41,7 +41,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '121';
+const APP_VERSION = '123';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -694,7 +694,6 @@ function App() {
   const [toast, setToast] = useState(null);
   const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
-  const screenSwipeRef = useRef(null);
 
   const runningEvent = events.find(e => e.running);
   const selectedEvents = events.filter(e => e.dateKey === selectedDateKey);
@@ -795,32 +794,6 @@ function App() {
     showToast(<>Obnovujem appku · v{APP_VERSION}</>);
     setTimeout(() => window.location.reload(), 120);
   };
-  const shouldIgnoreScreenSwipe = (target) => (
-    target.closest('button, input, .turbo-grid, .rec-filter, .rec-detail, .time-adjust')
-  );
-  const onScreenPointerDown = (event) => {
-    if (shouldIgnoreScreenSwipe(event.target)) return;
-    screenSwipeRef.current = { x: event.clientX, y: event.clientY };
-  };
-  const onScreenPointerMove = (event) => {
-    const swipe = screenSwipeRef.current;
-    if (!swipe) return;
-    const dx = event.clientX - swipe.x;
-    const dy = event.clientY - swipe.y;
-    if (Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx)) {
-      screenSwipeRef.current = null;
-    }
-  };
-  const onScreenPointerUp = (event) => {
-    const swipe = screenSwipeRef.current;
-    screenSwipeRef.current = null;
-    if (!swipe) return;
-    const dx = event.clientX - swipe.x;
-    const dy = event.clientY - swipe.y;
-    if (Math.abs(dx) < 72 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
-    if (dx < 0 && view === 'home') setView('records');
-    if (dx > 0 && view === 'records') setView('home');
-  };
   const onCameraFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -865,13 +838,7 @@ function App() {
     <Phone>
       <Header selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} onUndo={undo} canUndo={history.length>0}/>
 
-      <div
-        className={`view-swipe view-${view}`}
-        onPointerDown={onScreenPointerDown}
-        onPointerMove={onScreenPointerMove}
-        onPointerUp={onScreenPointerUp}
-        onPointerCancel={() => { screenSwipeRef.current = null; }}
-      >
+      <div className={`view-main view-${view}`}>
         {view === 'home' && (
           <Home
             events={selectedEvents}
@@ -899,9 +866,6 @@ function App() {
           <button className={view==='home'?'on':''} onClick={() => setView('home')}>Hlavná</button>
           <button className={view==='records'?'on':''} onClick={() => setView('records')}>Záznamy</button>
         </div>
-        <button className="refresh-meta icon-only" onClick={refreshApp} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
-          <Icon.Refresh/>
-        </button>
       </div>
 
       {toast && (

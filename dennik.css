@@ -115,7 +115,7 @@ button {
   display: none;
 }
 
-.view-swipe {
+.view-main {
   min-height: 0;
   overflow: hidden;
   display: grid;
@@ -256,37 +256,6 @@ button {
 .fab-cam svg {
   width: 22px;
   height: 22px;
-}
-
-.refresh-meta {
-  justify-self: end;
-  display: inline-grid;
-  grid-template-columns: auto auto;
-  align-items: center;
-  gap: 5px;
-  min-width: 52px;
-  height: 34px;
-  padding: 0 8px;
-  border: 0;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(247, 244, 237, 0.62);
-  font-family: var(--mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-.refresh-meta.icon-only {
-  grid-template-columns: 1fr;
-  min-width: 34px;
-  width: 34px;
-  padding: 0;
-}
-
-.refresh-meta svg {
-  width: 13px;
-  height: 13px;
 }
 
 .content-version {
