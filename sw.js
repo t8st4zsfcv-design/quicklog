@@ -9,8 +9,8 @@ const APP_VERSION = "V2.2";
 const CORE_SHELL = [
   "/",
   "/index.html",
-  `/dennik.css?v=${APP_VERSION}`,
-  `/dennik-turbo.css?v=${APP_VERSION}`,
+  `/app.css?v=${APP_VERSION}`,
+  `/components.css?v=${APP_VERSION}`,
   `/dennik.jsx?v=${APP_VERSION}`,
   `/manifest.webmanifest?v=${APP_VERSION}`
 ];
@@ -24,8 +24,8 @@ const OPTIONAL_SHELL = [
 const APP_SHELL_PATHS = new Set([
   "/",
   "/index.html",
-  "/dennik.css",
-  "/dennik-turbo.css",
+  "/app.css",
+  "/components.css",
   "/dennik.jsx",
   "/manifest.webmanifest"
 ]);

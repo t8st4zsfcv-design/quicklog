@@ -1,7 +1,7 @@
 # FastTrack — Cloudflare deploy
 
 ## What's in this folder
-- `index.html`, `dennik.jsx`, `dennik.css`, `dennik-turbo.css`, `sw.js`, `manifest.webmanifest`, `icons/`
+- `index.html`, `dennik.jsx`, `app.css`, `components.css`, `sw.js`, `manifest.webmanifest`, `icons/`
 - `_headers` — Cloudflare config so the Service Worker can update cleanly
 - No `server.mjs`, no `events-db.json` — we run pure static, data lives in a fresh FastTrack `localStorage` key on the iPhone
 
