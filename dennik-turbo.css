@@ -98,8 +98,14 @@
   right: 0;
   width: auto;
   height: var(--fill, 0%);
-  background: linear-gradient(0deg, var(--peach) 0%, var(--peach-2) 100%);
+  background: linear-gradient(0deg, var(--drink) 0%, #a7dedb 100%);
   transition: height 0.12s ease-out;
+}
+.tcard.drag.cat-drink {
+  background: var(--drink-soft);
+}
+.tcard.drag.cat-drink:hover {
+  background: rgba(127, 201, 199, 0.22);
 }
 
 /* size threshold tick marks at thirds */
@@ -155,7 +161,7 @@
   flex: 0 0 auto;
 }
 .cat-dot.dot-food { background: var(--peach); }
-.cat-dot.dot-drink { background: var(--peach-2); }
+.cat-dot.dot-drink { background: var(--drink); }
 .cat-dot.dot-activity { background: rgba(255,255,255,0.7); }
 .cat-dot.dot-mood { background: var(--red); }
 
@@ -241,8 +247,16 @@
 
 /* timer */
 .tcard.timer-card.running {
-  background: rgba(79, 138, 120, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(79, 138, 120, 0.4);
+  background: linear-gradient(135deg, var(--peach) 0%, var(--peach-2) 100%);
+  color: #16201f;
+  box-shadow: inset 0 0 0 1px rgba(255, 208, 163, 0.8), 0 10px 24px rgba(22, 32, 31, 0.16);
+}
+.tcard.timer-card.running .tcard-meta,
+.tcard.timer-card.running .timer-pop {
+  color: rgba(22,32,31,0.68);
+}
+.tcard.timer-card.running .rec-dot {
+  background: #16201f;
 }
 .timer-pop {
   display: grid;
@@ -396,6 +410,10 @@
   border-color: transparent;
   background: var(--peach);
   color: var(--bg-3);
+}
+.fchip.filter-drink.on {
+  background: var(--drink);
+  color: #16201f;
 }
 
 .rec-rail {

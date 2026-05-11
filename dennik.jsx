@@ -15,7 +15,7 @@ const TURBO = [
   // drink
   { sub: 'coffee',  cat: 'drink', label: 'Coffee' },
   { sub: 'water',   cat: 'drink', label: 'Voda' },
-  { sub: 'beer',    cat: 'drink', label: 'Beer' },
+  { sub: 'beer',    cat: 'drink', label: 'Beer', carbsByMass: { S: 7, M: 13, L: 20 } },
   { sub: 'wine',    cat: 'drink', label: 'Wine' },
   { sub: 'poldeci', cat: 'drink', label: 'Poldeci' },
   { sub: 'spirits', cat: 'drink', label: 'Spirits' },
@@ -41,7 +41,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '119';
+const APP_VERSION = '121';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -535,7 +535,7 @@ function LiveTimer({ startTimestamp }) {
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
 }
 
-function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
+function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRefresh }) {
   const featuredFood = ['kuluri', 'bread', 'sweets', 'fruit'];
   const featuredDrink = ['water', 'coffee', 'beer', 'wine', 'poldeci', 'protein_shake'];
   const featuredMood = ['stress', 'happy', 'nervousness'];
@@ -545,7 +545,9 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
   const moodItems = featuredMood.map((s) => TURBO.find(t => t.sub === s));
   const timerItems = TURBO.filter(t => t.timer);
 
-  const carbs = events.filter(e => e.cat === 'food').reduce((s, e) => s + (e.carbs || 0), 0);
+  const carbs = events
+    .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
+    .reduce((s, e) => s + (e.carbs || 0), 0);
   const activeToday = events.some(e => e.running) ? 1 : 0;
 
   return (
@@ -591,6 +593,10 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
           <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer}/>
         ))}
       </div>
+      <button className="content-version" onClick={onRefresh} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
+        <Icon.Refresh/>
+        <span>v{APP_VERSION}</span>
+      </button>
       <div style={{height: 24}}/>
     </div>
   );
@@ -611,7 +617,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
       </div>
       <div className="rec-filter">
         {['all','food','drink','activity','mood'].map((f) => (
-          <button key={f} className={`fchip ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
+          <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
             {f === 'all' ? `Všetko · ${events.length}` : `${CAT_LABEL[f]} · ${events.filter(e=>e.cat===f).length}`}
           </button>
         ))}
@@ -688,6 +694,7 @@ function App() {
   const [toast, setToast] = useState(null);
   const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
+  const screenSwipeRef = useRef(null);
 
   const runningEvent = events.find(e => e.running);
   const selectedEvents = events.filter(e => e.dateKey === selectedDateKey);
@@ -706,7 +713,7 @@ function App() {
   const addEvent = (data) => {
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
     let carbs = data.carbs;
-    if (data.cat === 'food' && data.size && !carbs) {
+    if ((data.cat === 'food' || data.sub === 'beer') && data.size && !carbs) {
       const item = TURBO.find(t => t.sub === data.sub);
       carbs = item?.carbsByMass?.[data.size];
     }
@@ -788,6 +795,32 @@ function App() {
     showToast(<>Obnovujem appku · v{APP_VERSION}</>);
     setTimeout(() => window.location.reload(), 120);
   };
+  const shouldIgnoreScreenSwipe = (target) => (
+    target.closest('button, input, .turbo-grid, .rec-filter, .rec-detail, .time-adjust')
+  );
+  const onScreenPointerDown = (event) => {
+    if (shouldIgnoreScreenSwipe(event.target)) return;
+    screenSwipeRef.current = { x: event.clientX, y: event.clientY };
+  };
+  const onScreenPointerMove = (event) => {
+    const swipe = screenSwipeRef.current;
+    if (!swipe) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (Math.abs(dy) > 18 && Math.abs(dy) > Math.abs(dx)) {
+      screenSwipeRef.current = null;
+    }
+  };
+  const onScreenPointerUp = (event) => {
+    const swipe = screenSwipeRef.current;
+    screenSwipeRef.current = null;
+    if (!swipe) return;
+    const dx = event.clientX - swipe.x;
+    const dy = event.clientY - swipe.y;
+    if (Math.abs(dx) < 72 || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+    if (dx < 0 && view === 'home') setView('records');
+    if (dx > 0 && view === 'records') setView('home');
+  };
   const onCameraFile = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -832,16 +865,25 @@ function App() {
     <Phone>
       <Header selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} onUndo={undo} canUndo={history.length>0}/>
 
-      {view === 'home' && (
-        <Home
-          events={selectedEvents}
-          runningEvent={runningEvent}
-          onLogSize={onLogSize}
-          onStartTimer={onStartTimer}
-          onStopTimer={onStopTimer}
-        />
-      )}
-      {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
+      <div
+        className={`view-swipe view-${view}`}
+        onPointerDown={onScreenPointerDown}
+        onPointerMove={onScreenPointerMove}
+        onPointerUp={onScreenPointerUp}
+        onPointerCancel={() => { screenSwipeRef.current = null; }}
+      >
+        {view === 'home' && (
+          <Home
+            events={selectedEvents}
+            runningEvent={runningEvent}
+            onLogSize={onLogSize}
+            onStartTimer={onStartTimer}
+            onStopTimer={onStopTimer}
+            onRefresh={refreshApp}
+          />
+        )}
+        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
+      </div>
 
       <div className="bottom-bar simple">
         <button className="fab-cam" onClick={openCamera} disabled={cameraBusy} aria-label="Otvoriť kameru"><Icon.Cam/></button>
@@ -857,9 +899,8 @@ function App() {
           <button className={view==='home'?'on':''} onClick={() => setView('home')}>Hlavná</button>
           <button className={view==='records'?'on':''} onClick={() => setView('records')}>Záznamy</button>
         </div>
-        <button className="refresh-meta" onClick={refreshApp} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
+        <button className="refresh-meta icon-only" onClick={refreshApp} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
           <Icon.Refresh/>
-          <span>v{APP_VERSION}</span>
         </button>
       </div>
 
