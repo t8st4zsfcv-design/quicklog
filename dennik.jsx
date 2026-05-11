@@ -25,8 +25,9 @@ const TURBO = [
 
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
+const MOOD_SIZE_LABELS = { S: 'nízka intenzita', M: 'stredná intenzita', L: 'vysoká intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.2';
+const APP_VERSION = 'V2.3';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -39,6 +40,10 @@ const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
 const LEGACY_EXTRA_SIZE = ['X', 'L'].join('');
 const INTENSITY_BY_SIZE = { S: 'low', M: 'med', L: 'high' };
 const SIZE_BY_INTENSITY = { low: 'S', med: 'M', high: 'L' };
+
+function sizeHintFor(item, size) {
+  return item?.cat === 'mood' ? MOOD_SIZE_LABELS[size] : SIZE_LABELS[size];
+}
 
 function loadLocalEvents() {
   try {
@@ -207,6 +212,7 @@ function migrateEvent(event) {
     size,
     intensity,
     note,
+    carbs: cat === 'mood' ? undefined : event?.carbs,
     timestamp,
     timestampLocal: event?.timestampLocal || formatLocalTimestamp(timestampDate),
     dateKey: event?.dateKey || formatLocalDateKey(timestampDate)
@@ -611,7 +617,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
         {dragging ? (
           <div className="size-pop">
             <div className="size-big">{currentSize}</div>
-            <div className="size-hint">{SIZE_LABELS[currentSize]}</div>
+            <div className="size-hint">{sizeHintFor(item, currentSize)}</div>
           </div>
         ) : (
           <div className="size-ladder">
@@ -850,6 +856,7 @@ function App() {
       const item = TURBO.find(t => t.sub === data.sub);
       carbs = item?.carbsByMass?.[data.size];
     }
+    if (data.cat === 'mood') carbs = undefined;
     const evt = { id, ...currentClock(), createdAt: Date.now(), ...data, carbs };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
