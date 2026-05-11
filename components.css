@@ -35,7 +35,7 @@
 }
 .turbo-grid.timers::-webkit-scrollbar { display: none; }
 
-.tcard.drag, .tcard.timer-card {
+.tcard.drag, .tcard.timer-card, .tcard.action-card {
   position: relative;
   display: grid;
   grid-template-columns: 1fr auto;
@@ -57,7 +57,7 @@
   min-height: 70px;
   transition: background 0.15s;
 }
-.tcard.drag:hover, .tcard.timer-card:hover { background: rgba(255,255,255,0.08); }
+.tcard.drag:hover, .tcard.timer-card:hover, .tcard.action-card:hover { background: rgba(255,255,255,0.08); }
 .tcard.drag.dragging { background: rgba(255,255,255,0.06); }
 .tcard.drag.vertical {
   grid-template-columns: 1fr;
@@ -166,7 +166,7 @@
 .cat-dot.dot-mood { background: var(--red); }
 .cat-dot.dot-sleep { background: rgba(247,244,237,0.7); }
 
-.tcard.drag .name, .tcard.timer-card .name {
+.tcard.drag .name, .tcard.timer-card .name, .tcard.action-card .name {
   font-family: var(--display);
   font-size: 18px;
   font-weight: 600;
@@ -190,6 +190,26 @@
   line-height: 1.05;
   white-space: normal;
   overflow-wrap: normal;
+}
+.tcard.action-card {
+  touch-action: manipulation;
+}
+.tcard.action-card:disabled {
+  opacity: 0.62;
+}
+.camera-card-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--red);
+  color: white;
+  box-shadow: 0 10px 22px rgba(255, 68, 47, 0.22);
+}
+.camera-card-icon svg {
+  width: 18px;
+  height: 18px;
 }
 .tcard.drag.vertical .tcard-right {
   position: absolute;

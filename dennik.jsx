@@ -25,9 +25,15 @@ const TURBO = [
 
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
+const BEER_SIZE_LABELS = { S: '0.3L · 7g', M: '0.5L · 13g', L: '0.7L+ · 20g' };
+const DRINK_SIZE_LABELS = {
+  coffee: { S: 'espresso', M: '2dl', L: '0.4L' },
+  wine: { S: '1dl', M: '2dl', L: '3dl+' },
+  spirits: { S: '4cl', M: '5cl', L: 'dvojitý' }
+};
 const MOOD_SIZE_LABELS = { S: 'nízka intenzita', M: 'stredná intenzita', L: 'vysoká intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.3';
+const APP_VERSION = 'V2.4';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -42,7 +48,16 @@ const INTENSITY_BY_SIZE = { S: 'low', M: 'med', L: 'high' };
 const SIZE_BY_INTENSITY = { low: 'S', med: 'M', high: 'L' };
 
 function sizeHintFor(item, size) {
-  return item?.cat === 'mood' ? MOOD_SIZE_LABELS[size] : SIZE_LABELS[size];
+  if (item?.cat === 'mood') return MOOD_SIZE_LABELS[size];
+  if (item?.sub === 'beer') return BEER_SIZE_LABELS[size];
+  if (item?.cat === 'drink') return DRINK_SIZE_LABELS[item.sub]?.[size] || size;
+  return SIZE_LABELS[size];
+}
+
+function carbsForSize(cat, sub, size) {
+  if (!size || (cat !== 'food' && sub !== 'beer')) return undefined;
+  const item = TURBO.find(t => t.sub === sub);
+  return item?.carbsByMass?.[size];
 }
 
 function loadLocalEvents() {
@@ -203,6 +218,7 @@ function migrateEvent(event) {
     intensity = intensity || INTENSITY_BY_SIZE[size] || 'med';
     size = size || SIZE_BY_INTENSITY[intensity];
   }
+  const canonicalCarbs = carbsForSize(cat, sub, size);
 
   return {
     ...event,
@@ -212,7 +228,7 @@ function migrateEvent(event) {
     size,
     intensity,
     note,
-    carbs: cat === 'mood' ? undefined : event?.carbs,
+    carbs: cat === 'mood' ? undefined : canonicalCarbs ?? event?.carbs,
     timestamp,
     timestampLocal: event?.timestampLocal || formatLocalTimestamp(timestampDate),
     dateKey: event?.dateKey || formatLocalDateKey(timestampDate)
@@ -665,6 +681,23 @@ function MoodCard({ item, onLog }) {
   return <DragCard item={item} onLog={onLog} />;
 }
 
+function CameraCard({ onOpenCamera, disabled }) {
+  return (
+    <button className="tcard action-card camera-card cat-food" onClick={onOpenCamera} disabled={disabled} aria-label="Otvoriť kameru">
+      <div className="tcard-body">
+        <div className="tcard-meta">
+          <span className="cat-dot dot-food" />
+          <span className="sub">camera</span>
+        </div>
+        <div className="name">Camera</div>
+      </div>
+      <div className="tcard-right">
+        <div className="camera-card-icon"><Icon.Cam/></div>
+      </div>
+    </button>
+  );
+}
+
 function LiveTimer({ startTimestamp }) {
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
@@ -674,7 +707,7 @@ function LiveTimer({ startTimestamp }) {
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
 }
 
-function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRefresh }) {
+function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRefresh, onOpenCamera, cameraBusy }) {
   const featuredFood = ['carbs', 'kuluri', 'junk'];
   const featuredDrink = ['coffee', 'beer', 'wine', 'spirits'];
   const featuredMood = ['adrenaline', 'sick'];
@@ -705,6 +738,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
       </div>
       <div className="turbo-grid">
         {foodItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
+        <CameraCard onOpenCamera={onOpenCamera} disabled={cameraBusy}/>
       </div>
 
       <div className="section-title" style={{marginTop: 18}}>
@@ -852,10 +886,8 @@ function App() {
   const addEvent = (data) => {
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
     let carbs = data.carbs;
-    if ((data.cat === 'food' || data.sub === 'beer') && data.size && !carbs) {
-      const item = TURBO.find(t => t.sub === data.sub);
-      carbs = item?.carbsByMass?.[data.size];
-    }
+    const canonicalCarbs = carbsForSize(data.cat, data.sub, data.size);
+    if (canonicalCarbs != null) carbs = canonicalCarbs;
     if (data.cat === 'mood') carbs = undefined;
     const evt = { id, ...currentClock(), createdAt: Date.now(), ...data, carbs };
     setHistory(h => [...h, { kind: 'add', id }]);
@@ -995,13 +1027,14 @@ function App() {
             onStartTimer={onStartTimer}
             onStopTimer={onStopTimer}
             onRefresh={refreshApp}
+            onOpenCamera={openCamera}
+            cameraBusy={cameraBusy}
           />
         )}
         {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
-        <button className="fab-cam" onClick={openCamera} disabled={cameraBusy} aria-label="Otvoriť kameru"><Icon.Cam/></button>
         <input
           ref={cameraInputRef}
           className="camera-input"

@@ -1,11 +1,11 @@
-// QuickLog Service Worker V2.3
+// QuickLog Service Worker V2.4
 // Strategy:
 //   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
 //   - API requests (/api/*): network-only (no caching)
 //   - Other requests: network-first with cache fallback (offline support)
 
-const CACHE_NAME = "quicklog-v2-3";
-const APP_VERSION = "V2.3";
+const CACHE_NAME = "quicklog-v2-4";
+const APP_VERSION = "V2.4";
 const CORE_SHELL = [
   "/",
   "/index.html",
