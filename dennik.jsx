@@ -41,7 +41,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '118';
+const APP_VERSION = '119';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -365,6 +365,9 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
   const [dragging, setDragging] = useState(false);
   const [sizeIdx, setSizeIdx] = useState(0);
   const startPoint = useRef(null);
+  const startX = useRef(null);
+  const startY = useRef(null);
+  const dragActive = useRef(false);
   const pctRef = useRef(0);
   const sizeIdxRef = useRef(0);
   const pointerIdRef = useRef(null);
@@ -381,6 +384,9 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
 
   const resetDrag = () => {
     startPoint.current = null;
+    startX.current = null;
+    startY.current = null;
+    dragActive.current = false;
     pointerIdRef.current = null;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
@@ -400,23 +406,41 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
 
   const onPointerDown = (e) => {
     if (e.button !== undefined && e.button !== 0) return;
-    e.preventDefault();
     startPoint.current = isVertical ? e.clientY : e.clientX;
+    startX.current = e.clientX;
+    startY.current = e.clientY;
     pointerIdRef.current = e.pointerId;
     spanRef.current = isVertical ? (ref.current?.offsetHeight || 160) : (ref.current?.offsetWidth || 200);
     pctRef.current = 0;
     sizeIdxRef.current = 0;
-    ref.current?.setPointerCapture?.(e.pointerId);
-    setDragging(true);
+    if (!isVertical) {
+      e.preventDefault();
+      dragActive.current = true;
+      ref.current?.setPointerCapture?.(e.pointerId);
+      setDragging(true);
+    }
     setSizeIdx(0);
   };
   const onPointerMove = (e) => {
     if (pointerIdRef.current !== e.pointerId) return;
+    if (isVertical && !dragActive.current) {
+      const dx = Math.abs(e.clientX - startX.current);
+      const dy = startY.current - e.clientY;
+      if (dx > 6 && dx > Math.abs(dy)) return;
+      if (dy < 8) return;
+      dragActive.current = true;
+      ref.current?.setPointerCapture?.(e.pointerId);
+      setDragging(true);
+    }
     e.preventDefault();
     updateDrag(e);
   };
   const onPointerUp = (e) => {
     if (pointerIdRef.current !== e.pointerId) return;
+    if (!dragActive.current) {
+      resetDrag();
+      return;
+    }
     e.preventDefault();
     updateDrag(e);
     ref.current?.releasePointerCapture?.(e.pointerId);
@@ -487,7 +511,7 @@ function TimerCard({ item, runningEvent, onStart, onStop }) {
         {isRunning ? (
           <div className="timer-pop">
             <span className="rec-dot" />
-            <span className="timer-val"><LiveTimer startHour={runningEvent.hour}/></span>
+            <span className="timer-val"><LiveTimer key={runningEvent.id} startTimestamp={runningEvent.timestamp}/></span>
           </div>
         ) : (
           <div className="play-btn">▶</div>
@@ -502,10 +526,10 @@ function MoodCard({ item, onLog }) {
   return <DragCard item={item} onLog={onLog} />;
 }
 
-function LiveTimer({ startHour }) {
+function LiveTimer({ startTimestamp }) {
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
-  const totalSec = Math.max(0, Math.floor((currentHour() - startHour) * 3600) + tick);
+  const totalSec = Math.max(0, Math.floor((Date.now() - (startTimestamp || Date.now())) / 1000));
   const h = Math.floor(totalSec/3600), m = Math.floor((totalSec%3600)/60), s = totalSec%60;
   if (h > 0) return <span>{String(h).padStart(2,'0')}:{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
