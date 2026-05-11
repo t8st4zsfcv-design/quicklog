@@ -21,16 +21,12 @@ const TURBO = [
   { sub: 'travel',   cat: 'activity', label: 'Travel',   timer: true },
   { sub: 'cannula',  cat: 'activity', label: 'Cannula' },
   { sub: 'meds',     cat: 'activity', label: 'Meds' },
-  // sleep (timer)
-  { sub: 'good',  cat: 'sleep', label: 'Good',  timer: true },
-  { sub: 'bad',   cat: 'sleep', label: 'Bad',   timer: true },
-  { sub: 'short', cat: 'sleep', label: 'Short', timer: true },
 ];
 
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
-const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', sleep: 'spánok' };
-const APP_VERSION = 'V2';
+const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
+const APP_VERSION = 'V2.1';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -640,7 +636,6 @@ function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   );
 }
 
-// Mood card — same as DragCard but smaller, single-tap (no size needed but keeps S/M/L feel)
 function MoodCard({ item, onLog }) {
   return <DragCard item={item} onLog={onLog} />;
 }
@@ -663,7 +658,6 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const moodItems = featuredMood.map((s) => TURBO.find(t => t.sub === s));
   const activityItems = TURBO.filter(t => t.cat === 'activity');
-  const sleepItems = TURBO.filter(t => t.timer && t.cat === 'sleep');
 
   const carbs = events
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
@@ -700,7 +694,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
         <h3>Nálada</h3>
         <small>POTIAHNI PRE INTENZITU</small>
       </div>
-      <div className="turbo-grid three">
+      <div className="turbo-grid">
         {moodItems.map((item) => <MoodCard key={item.sub} item={item} onLog={onLogSize}/>)}
       </div>
 
@@ -714,15 +708,6 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
         ))}
       </div>
 
-      <div className="section-title" style={{marginTop: 18}}>
-        <h3>Spánok</h3>
-        <small>ŤUKNI · ZAPNI / VYPNI</small>
-      </div>
-      <div className="turbo-grid timers">
-        {sleepItems.map((item) => (
-          <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} onLog={onLogSize}/>
-        ))}
-      </div>
       <button className="content-version" onClick={onRefresh} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
         <Icon.Refresh/>
         <span>{APP_VERSION}</span>
@@ -746,7 +731,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
         <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
-        {['all','food','drink','activity','mood','sleep'].map((f) => (
+        {['all','food','drink','activity','mood'].map((f) => (
           <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
             {f === 'all' ? `Všetko · ${events.length}` : `${CAT_LABEL[f]} · ${events.filter(e=>e.cat===f).length}`}
           </button>
@@ -825,8 +810,8 @@ function App() {
   const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
 
-  const runningEvent = events.find(e => e.running);
-  const selectedEvents = events.filter(e => e.dateKey === selectedDateKey);
+  const runningEvent = events.find(e => e.running && e.cat !== 'sleep');
+  const selectedEvents = events.filter(e => e.dateKey === selectedDateKey && e.cat !== 'sleep');
 
   useEffect(() => {
     try {
@@ -909,13 +894,14 @@ function App() {
   };
   const exportCsv = async () => {
     try {
-      const mode = await downloadEventsCsv(events);
+      const allEvents = loadLocalEvents();
+      const mode = await downloadEventsCsv(allEvents);
       if (mode === 'share') {
-        showToast(events.length ? <>CSV pripravené na uloženie</> : <>CSV pripravené bez záznamov</>);
+        showToast(allEvents.length ? <>CSV pripravené na uloženie</> : <>CSV pripravené bez záznamov</>);
       } else if (mode === 'open') {
         showToast(<>CSV otvorené v novom okne</>);
       } else {
-        showToast(events.length ? <>CSV stiahnuté</> : <>CSV stiahnuté bez záznamov</>);
+        showToast(allEvents.length ? <>CSV stiahnuté</> : <>CSV stiahnuté bez záznamov</>);
       }
     } catch (error) {
       if (error?.name === 'AbortError') return;

@@ -286,7 +286,9 @@ button {
 .nav-pill {
   justify-self: center;
   display: inline-flex;
+  justify-content: center;
   gap: 4px;
+  margin: 0 auto;
   padding: 5px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.1);
