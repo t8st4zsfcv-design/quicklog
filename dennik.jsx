@@ -22,6 +22,7 @@ const TURBO = [
   { sub: 'soda',    cat: 'drink', label: 'Soda' },
   { sub: 'juice',   cat: 'drink', label: 'Juice' },
   { sub: 'protein', cat: 'drink', label: 'Protein' },
+  { sub: 'protein_shake', cat: 'drink', label: 'Protein Shake' },
   // mood
   { sub: 'stress',      cat: 'mood', label: 'Stress' },
   { sub: 'frustration', cat: 'mood', label: 'Frustr.' },
@@ -40,7 +41,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '117';
+const APP_VERSION = '118';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -54,8 +55,10 @@ const LEGACY_EXTRA_SIZE = ['X', 'L'].join('');
 
 function loadLocalEvents() {
   try {
-    LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const raw = localStorage.getItem(STORAGE_KEY)
+      || LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find(Boolean)
+      || '[]';
+    const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.map(migrateEvent) : [];
   } catch {
     return [];
@@ -510,7 +513,7 @@ function LiveTimer({ startHour }) {
 
 function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
   const featuredFood = ['kuluri', 'bread', 'sweets', 'fruit'];
-  const featuredDrink = ['water', 'coffee', 'beer', 'wine', 'poldeci'];
+  const featuredDrink = ['water', 'coffee', 'beer', 'wine', 'poldeci', 'protein_shake'];
   const featuredMood = ['stress', 'happy', 'nervousness'];
 
   const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
@@ -519,6 +522,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
   const timerItems = TURBO.filter(t => t.timer);
 
   const carbs = events.filter(e => e.cat === 'food').reduce((s, e) => s + (e.carbs || 0), 0);
+  const activeToday = events.some(e => e.running) ? 1 : 0;
 
   return (
     <div className="scroll">
@@ -527,7 +531,7 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer }) {
       <div className="stats">
         <div className="stat-big">{carbs}<span className="unit">g</span></div>
         <div className="stat-mini"><b>{events.length}</b>EVENTOV</div>
-        <div className="stat-mini"><b>{runningEvent ? 1 : 0}</b>AKTÍV.</div>
+        <div className="stat-mini"><b>{activeToday}</b>AKTÍV.</div>
       </div>
 
       <div className="section-title">
@@ -623,9 +627,9 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
                   <div>
                     <div className="lbl" style={{marginBottom: 8}}>Dĺžka záznamu</div>
                     <div className="time-adjust duration-adjust">
-                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, -5)}>−5 min</button>
+                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, -10)}>−10 min</button>
                       <div className="now-time">{durationValue} min</div>
-                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, +5)}>+5 min</button>
+                      <button className="tbtn" onClick={() => onAdjustDuration(e.id, +10)}>+10 min</button>
                     </div>
                   </div>
                 )}
