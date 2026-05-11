@@ -62,10 +62,10 @@
 .tcard.drag.vertical {
   grid-template-columns: 1fr;
   align-items: end;
-  flex: 0 0 86px;
-  width: 86px;
+  flex: 0 0 70px;
+  width: 70px;
   min-height: 148px;
-  padding: 14px 10px;
+  padding: 14px 9px;
   scroll-snap-align: start;
   touch-action: pan-x;
 }
@@ -183,7 +183,7 @@
   font-size: 13px;
   line-height: 1.05;
   white-space: normal;
-  overflow-wrap: normal;
+  overflow-wrap: anywhere;
 }
 .tcard.timer-card .name {
   font-size: 14px;

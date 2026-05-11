@@ -4,12 +4,10 @@ const { useState, useEffect, useRef } = React;
 const TURBO = [
   // food
   { sub: 'carbs',  cat: 'food', label: 'Carbs',  carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'kuluri', cat: 'food', label: 'Kuluri', carbsByMass: { S: 15, M: 30, L: 60 } },
   { sub: 'junk',   cat: 'food', label: 'Junk',   carbsByMass: { S: 15, M: 30, L: 60 } },
   // drink
   { sub: 'coffee',  cat: 'drink', label: 'Coffee' },
-  { sub: 'beer',    cat: 'drink', label: 'Beer', carbsByMass: { S: 7, M: 13, L: 20 } },
-  { sub: 'wine',    cat: 'drink', label: 'Wine' },
+  { sub: 'beer',    cat: 'drink', label: 'Beer', carbsByMass: { S: 12, M: 20, L: 28 } },
   { sub: 'spirits', cat: 'drink', label: 'Spirits' },
   // mood
   { sub: 'adrenaline', cat: 'mood', label: 'Adrenalin' },
@@ -25,15 +23,14 @@ const TURBO = [
 
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
-const BEER_SIZE_LABELS = { S: '0.3L · 7g', M: '0.5L · 13g', L: '0.7L+ · 20g' };
+const BEER_SIZE_LABELS = { S: '0.3L · 12g', M: '0.5L · 20g', L: '0.7L+ · 28g' };
 const DRINK_SIZE_LABELS = {
   coffee: { S: 'espresso', M: '2dl', L: '0.4L' },
-  wine: { S: '1dl', M: '2dl', L: '3dl+' },
-  spirits: { S: '4cl', M: '5cl', L: 'dvojitý' }
+  spirits: { S: '1 drink', M: '2 drinky', L: '3+ drinky' }
 };
 const MOOD_SIZE_LABELS = { S: 'nízka intenzita', M: 'stredná intenzita', L: 'vysoká intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.5';
+const APP_VERSION = 'V2.7';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -58,6 +55,12 @@ function carbsForSize(cat, sub, size) {
   if (!size || (cat !== 'food' && sub !== 'beer')) return undefined;
   const item = TURBO.find(t => t.sub === sub);
   return item?.carbsByMass?.[size];
+}
+
+function normalizedCarbsValue(value) {
+  const amount = Number(value);
+  if (!Number.isFinite(amount) || amount <= 0) return undefined;
+  return Math.round(amount);
 }
 
 function loadLocalEvents() {
@@ -163,18 +166,21 @@ function migrateEvent(event) {
   let note = event?.note;
 
   const addLegacyNote = (legacyName) => {
-    if (!legacyName || note) return;
-    note = `legacy:${legacyName}`;
+    if (!legacyName) return;
+    const text = String(note || '');
+    if (text.toLowerCase().includes(legacyName.toLowerCase())) return;
+    note = text ? `${text} · legacy:${legacyName}` : `legacy:${legacyName}`;
   };
 
-  if (cat === 'food' && ['bread', 'rice', 'pasta', 'potato', 'sweets', 'snack', 'fruit', 'photo'].includes(sub)) {
+  if (cat === 'food' && ['bread', 'rice', 'pasta', 'potato', 'sweets', 'snack', 'fruit', 'photo', 'kuluri'].includes(sub)) {
     addLegacyNote(sub);
     sub = 'carbs';
     label = label || 'Carbs';
   }
 
   if (cat === 'drink') {
-    if (sub === 'poldeci') {
+    if (['poldeci', 'wine'].includes(sub)) {
+      addLegacyNote(sub);
       sub = 'spirits';
       label = 'Spirits';
       size = size || 'M';
@@ -182,16 +188,9 @@ function migrateEvent(event) {
     if (['juice', 'soda'].includes(sub)) {
       addLegacyNote(sub);
       cat = 'food';
-      sub = 'carbs';
-      label = 'Carbs';
+      sub = 'junk';
+      label = 'Junk';
       size = size || 'M';
-    }
-    if (sub === 'protein') {
-      addLegacyNote(sub);
-      cat = 'food';
-      sub = 'carbs';
-      label = 'Carbs';
-      size = size || 'S';
     }
   }
 
@@ -709,8 +708,8 @@ function LiveTimer({ startTimestamp }) {
 }
 
 function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRefresh, onOpenCamera, cameraBusy }) {
-  const featuredFood = ['carbs', 'kuluri', 'junk'];
-  const featuredDrink = ['coffee', 'beer', 'wine', 'spirits'];
+  const featuredFood = ['carbs', 'junk'];
+  const featuredDrink = ['coffee', 'beer', 'spirits'];
   const featuredMood = ['adrenaline', 'sick'];
 
   const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
@@ -918,10 +917,10 @@ function App() {
 
   const addEvent = (data) => {
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
-    let carbs = data.carbs;
+    let carbs = normalizedCarbsValue(data.carbs);
     const canonicalCarbs = carbsForSize(data.cat, data.sub, data.size);
     if (canonicalCarbs != null) carbs = canonicalCarbs;
-    if (data.cat === 'mood') carbs = undefined;
+    if (data.cat !== 'food' && data.sub !== 'beer') carbs = undefined;
     const evt = { id, ...currentClock(), createdAt: Date.now(), ...data, carbs };
     setHistory(h => [...h, { kind: 'add', id }]);
     setEvents(es => [...es, evt]);
@@ -1035,7 +1034,7 @@ function App() {
         }
         throw new Error(result.error || `AI odhad zlyhal (${response.status}).`);
       }
-      const grams = Math.max(0, Math.round(Number(result.grams) || 0));
+      const grams = normalizedCarbsValue(result.grams);
       const label = labelFromAiResult(result);
       addEvent({
         sub: 'carbs',
@@ -1044,7 +1043,7 @@ function App() {
         carbs: grams,
         confidence: result.confidence,
         note: result.short_note,
-        source: 'camera-ai'
+        source: 'ai_camera'
       });
     } catch (error) {
       showToast(<>{error.message || 'Fotka sa nepodarila spracovať.'}</>, 7000);
