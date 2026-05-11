@@ -40,7 +40,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '116';
+const APP_VERSION = '117';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -56,13 +56,45 @@ function loadLocalEvents() {
   try {
     LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
     const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-    return Array.isArray(parsed) ? parsed.map((event) => ({
-      ...event,
-      size: event?.size === LEGACY_EXTRA_SIZE ? 'L' : event?.size
-    })) : [];
+    return Array.isArray(parsed) ? parsed.map(migrateEvent) : [];
   } catch {
     return [];
   }
+}
+
+function formatLocalDateKey(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+function localDateFromKey(dateKey) {
+  const [yyyy, mm, dd] = String(dateKey || formatLocalDateKey()).split('-').map(Number);
+  return new Date(yyyy, (mm || 1) - 1, dd || 1, 0, 0, 0, 0);
+}
+
+function addDaysToDateKey(dateKey, deltaDays) {
+  const date = localDateFromKey(dateKey);
+  date.setDate(date.getDate() + deltaDays);
+  return formatLocalDateKey(date);
+}
+
+function formatLocalTimestamp(date = new Date()) {
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  const h = String(date.getHours()).padStart(2, '0');
+  const m = String(date.getMinutes()).padStart(2, '0');
+  const s = String(date.getSeconds()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T${h}:${m}:${s}`;
+}
+
+function timestampFromDateKeyAndHour(dateKey, hour) {
+  const date = localDateFromKey(dateKey);
+  const totalMinutes = Math.min(1439, Math.max(0, Math.round((Number(hour) || 0) * 60)));
+  date.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
+  return date.getTime();
 }
 
 function currentClock() {
@@ -70,6 +102,9 @@ function currentClock() {
   const h = now.getHours();
   const m = now.getMinutes();
   return {
+    timestamp: now.getTime(),
+    timestampLocal: formatLocalTimestamp(now),
+    dateKey: formatLocalDateKey(now),
     time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
     hour: h + (m / 60)
   };
@@ -89,19 +124,34 @@ function formatHour(hour) {
 }
 
 function eventSortValue(event) {
-  if (Number.isFinite(event?.hour)) return event.hour;
+  if (Number.isFinite(event?.timestamp)) return event.timestamp;
+  if (Number.isFinite(event?.createdAt)) return event.createdAt;
+  if (Number.isFinite(event?.hour)) return timestampFromDateKeyAndHour(event?.dateKey, event.hour);
   const [h = 0, m = 0] = String(event?.time || '').split(':').map(Number);
-  return (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60);
+  return timestampFromDateKeyAndHour(event?.dateKey, (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60));
 }
 
 function eventDateParts(event, hourOverride = eventSortValue(event)) {
-  const date = new Date();
-  const totalMinutes = Math.min(1439, Math.max(0, Math.round((Number(hourOverride) || 0) * 60)));
-  date.setHours(Math.floor(totalMinutes / 60), totalMinutes % 60, 0, 0);
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
-  return { iso: date.toISOString(), day: `${yyyy}-${mm}-${dd}` };
+  const date = Number(hourOverride) > 100000000000 ? new Date(hourOverride) : new Date(timestampFromDateKeyAndHour(event?.dateKey, hourOverride));
+  return { iso: formatLocalTimestamp(date), day: formatLocalDateKey(date) };
+}
+
+function migrateEvent(event) {
+  const sourceDate = Number.isFinite(event?.timestamp) ? new Date(event.timestamp)
+    : Number.isFinite(event?.createdAt) ? new Date(event.createdAt)
+    : new Date();
+  const dateKey = event?.dateKey || formatLocalDateKey(sourceDate);
+  const [h = sourceDate.getHours(), m = sourceDate.getMinutes()] = String(event?.time || '').split(':').map(Number);
+  const hour = Number.isFinite(event?.hour) ? event.hour : (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60);
+  const timestamp = Number.isFinite(event?.timestamp) ? event.timestamp : timestampFromDateKeyAndHour(dateKey, hour);
+  const timestampDate = new Date(timestamp);
+  return {
+    ...event,
+    size: event?.size === LEGACY_EXTRA_SIZE ? 'L' : event?.size,
+    timestamp,
+    timestampLocal: event?.timestampLocal || formatLocalTimestamp(timestampDate),
+    dateKey: event?.dateKey || formatLocalDateKey(timestampDate)
+  };
 }
 
 function csvCell(value) {
@@ -110,22 +160,24 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp_iso', 'date', 'time', 'start_time', 'end_time', 'start_timestamp_iso', 'end_timestamp_iso', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
+  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
   const rows = events
     .slice()
-    .sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0))
+    .sort((a, b) => eventSortValue(b) - eventSortValue(a))
     .map((event) => {
-      const startHour = eventSortValue(event);
+      const startTimestamp = eventSortValue(event);
+      const startDate = new Date(startTimestamp);
+      const startHour = startDate.getHours() + (startDate.getMinutes() / 60);
       const durationHours = event.duration ? event.duration / 60 : 0;
-      const endHour = event.cat === 'activity' && event.duration ? Math.min(23.99, startHour + durationHours) : '';
-      const date = eventDateParts(event, startHour);
-      const endDate = endHour === '' ? null : eventDateParts(event, endHour);
+      const endTimestamp = event.cat === 'activity' && event.duration ? startTimestamp + (durationHours * 60 * 60 * 1000) : '';
+      const date = eventDateParts(event, startTimestamp);
+      const endDate = endTimestamp === '' ? null : eventDateParts(event, endTimestamp);
       return [
         date.iso,
         date.day,
         event.time,
         formatHour(startHour),
-        endHour === '' ? '' : formatHour(endHour),
+        endTimestamp === '' ? '' : formatHour(new Date(endTimestamp).getHours() + (new Date(endTimestamp).getMinutes() / 60)),
         date.iso,
         endDate?.iso || '',
         event.cat,
@@ -261,15 +313,22 @@ const Icon = {
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
 };
 
-function Header({ dayOffset, setDayOffset, onUndo, canUndo }) {
+function dateKeyOffsetFromToday(dateKey) {
+  const today = localDateFromKey(formatLocalDateKey());
+  const selected = localDateFromKey(dateKey);
+  return Math.round((selected.getTime() - today.getTime()) / 86400000);
+}
+
+function Header({ selectedDateKey, setSelectedDateKey, onUndo, canUndo }) {
+  const dayOffset = dateKeyOffsetFromToday(selectedDateKey);
   const labels = { 0: 'DNES', '-1': 'VČERA', '-2': 'PREDVČER.' };
-  const lbl = labels[dayOffset] || `−${Math.abs(dayOffset)} DNÍ`;
+  const lbl = labels[dayOffset] || (dayOffset < 0 ? `−${Math.abs(dayOffset)} DNÍ` : selectedDateKey);
   return (
     <div className="head">
       <div className="day-switcher">
-        <button className="arr" onClick={() => setDayOffset(dayOffset - 1)}>‹</button>
+        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, -1))}>‹</button>
         <span className="lbl"><b>{lbl}</b></span>
-        <button className="arr" onClick={() => setDayOffset(Math.min(0, dayOffset + 1))} disabled={dayOffset >= 0}>›</button>
+        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, 1))} disabled={dayOffset >= 0}>›</button>
       </div>
       <div className="top-icons">
         <button className="icon-btn" disabled={!canUndo} onClick={onUndo} style={{opacity: canUndo ? 1 : 0.4}}><Icon.Undo/></button>
@@ -599,10 +658,11 @@ function App() {
   const [history, setHistory] = useState([]);
   const [cameraBusy, setCameraBusy] = useState(false);
   const [toast, setToast] = useState(null);
-  const [dayOffset, setDayOffset] = useState(0);
+  const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
 
   const runningEvent = events.find(e => e.running);
+  const selectedEvents = events.filter(e => e.dateKey === selectedDateKey);
 
   useEffect(() => {
     try {
@@ -642,7 +702,8 @@ function App() {
   const onStopTimer = (id) => {
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
-      const duration = Math.max(5, Math.round((currentHour() - e.hour) * 60));
+      const startTimestamp = Number.isFinite(e.timestamp) ? e.timestamp : timestampFromDateKeyAndHour(e.dateKey, e.hour);
+      const duration = Math.max(5, Math.round((Date.now() - startTimestamp) / 60000));
       return { ...e, running: false, ended: true, duration };
     }));
     showToast(<>Timer zastavený</>);
@@ -651,7 +712,8 @@ function App() {
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
       const newHour = Math.max(0, Math.min(23.99, e.hour + deltaMin / 60));
-      return { ...e, hour: newHour, time: formatHour(newHour) };
+      const timestamp = timestampFromDateKeyAndHour(e.dateKey, newHour);
+      return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
     }));
   };
   const onAdjustDuration = (id, deltaMin) => {
@@ -740,18 +802,18 @@ function App() {
 
   return (
     <Phone>
-      <Header dayOffset={dayOffset} setDayOffset={setDayOffset} onUndo={undo} canUndo={history.length>0}/>
+      <Header selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} onUndo={undo} canUndo={history.length>0}/>
 
       {view === 'home' && (
         <Home
-          events={events}
+          events={selectedEvents}
           runningEvent={runningEvent}
           onLogSize={onLogSize}
           onStartTimer={onStartTimer}
           onStopTimer={onStopTimer}
         />
       )}
-      {view === 'records' && <Records events={events} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
+      {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
 
       <div className="bottom-bar simple">
         <button className="fab-cam" onClick={openCamera} disabled={cameraBusy} aria-label="Otvoriť kameru"><Icon.Cam/></button>
