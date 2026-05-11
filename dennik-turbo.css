@@ -164,6 +164,7 @@
 .cat-dot.dot-drink { background: var(--drink); }
 .cat-dot.dot-activity { background: rgba(255,255,255,0.7); }
 .cat-dot.dot-mood { background: var(--red); }
+.cat-dot.dot-sleep { background: rgba(247,244,237,0.7); }
 
 .tcard.drag .name, .tcard.timer-card .name {
   font-family: var(--display);
@@ -346,7 +347,8 @@
   letter-spacing: -0.02em;
   padding: 0 18px;
 }
-.rec-detail.detail-activity .time-adjust .now-time {
+.rec-detail.detail-activity .time-adjust .now-time,
+.rec-detail.detail-sleep .time-adjust .now-time {
   background: var(--green);
   color: #f7f4ed;
 }

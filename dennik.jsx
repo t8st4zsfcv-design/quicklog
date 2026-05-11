@@ -3,45 +3,34 @@ const { useState, useEffect, useRef } = React;
 // ====== Subtypes from QuickLog data model ======
 const TURBO = [
   // food
+  { sub: 'carbs',  cat: 'food', label: 'Carbs',  carbsByMass: { S: 15, M: 30, L: 60 } },
   { sub: 'kuluri', cat: 'food', label: 'Kuluri', carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'bread',  cat: 'food', label: 'Bread',  carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'rice',   cat: 'food', label: 'Rice',   carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'pasta',  cat: 'food', label: 'Pasta',  carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'potato', cat: 'food', label: 'Potato', carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'sweets', cat: 'food', label: 'Sweets', carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'snack',  cat: 'food', label: 'Snack',  carbsByMass: { S: 15, M: 30, L: 60 } },
-  { sub: 'fruit',  cat: 'food', label: 'Fruit',  carbsByMass: { S: 15, M: 30, L: 60 } },
   { sub: 'junk',   cat: 'food', label: 'Junk',   carbsByMass: { S: 15, M: 30, L: 60 } },
   // drink
   { sub: 'coffee',  cat: 'drink', label: 'Coffee' },
-  { sub: 'water',   cat: 'drink', label: 'Voda' },
   { sub: 'beer',    cat: 'drink', label: 'Beer', carbsByMass: { S: 7, M: 13, L: 20 } },
   { sub: 'wine',    cat: 'drink', label: 'Wine' },
-  { sub: 'poldeci', cat: 'drink', label: 'Poldeci' },
   { sub: 'spirits', cat: 'drink', label: 'Spirits' },
-  { sub: 'soda',    cat: 'drink', label: 'Soda' },
-  { sub: 'juice',   cat: 'drink', label: 'Juice' },
-  { sub: 'protein', cat: 'drink', label: 'Protein' },
-  { sub: 'protein_shake', cat: 'drink', label: 'Protein Shake' },
   // mood
-  { sub: 'stress',      cat: 'mood', label: 'Stress' },
-  { sub: 'frustration', cat: 'mood', label: 'Frustr.' },
-  { sub: 'nervousness', cat: 'mood', label: 'Nervous' },
-  { sub: 'happy',       cat: 'mood', label: 'Happy' },
-  { sub: 'sick',        cat: 'mood', label: 'Sick' },
+  { sub: 'adrenaline', cat: 'mood', label: 'Adrenalin' },
+  { sub: 'sick',       cat: 'mood', label: 'Sick' },
   // activity (timer)
   { sub: 'exercise', cat: 'activity', label: 'Exercise', timer: true },
-  { sub: 'walk',     cat: 'activity', label: 'Walk',     timer: true },
   { sub: 'nap',      cat: 'activity', label: 'Nap',      timer: true },
   { sub: 'party',    cat: 'activity', label: 'Party',    timer: true },
-  { sub: 'sex',      cat: 'activity', label: 'Sex',      timer: true },
   { sub: 'travel',   cat: 'activity', label: 'Travel',   timer: true },
+  { sub: 'cannula',  cat: 'activity', label: 'Cannula' },
+  { sub: 'meds',     cat: 'activity', label: 'Meds' },
+  // sleep (timer)
+  { sub: 'good',  cat: 'sleep', label: 'Good',  timer: true },
+  { sub: 'bad',   cat: 'sleep', label: 'Bad',   timer: true },
+  { sub: 'short', cat: 'sleep', label: 'Short', timer: true },
 ];
 
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
-const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = '123';
+const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', sleep: 'spánok' };
+const APP_VERSION = 'V2';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -52,6 +41,8 @@ const AI_IMAGE_STEPS = [
 const STORAGE_KEY = 'fasttrack-diary-events-v2';
 const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
 const LEGACY_EXTRA_SIZE = ['X', 'L'].join('');
+const INTENSITY_BY_SIZE = { S: 'low', M: 'med', L: 'high' };
+const SIZE_BY_INTENSITY = { low: 'S', med: 'M', high: 'L' };
 
 function loadLocalEvents() {
   try {
@@ -148,9 +139,78 @@ function migrateEvent(event) {
   const hour = Number.isFinite(event?.hour) ? event.hour : (Number.isFinite(h) ? h : 0) + ((Number.isFinite(m) ? m : 0) / 60);
   const timestamp = Number.isFinite(event?.timestamp) ? event.timestamp : timestampFromDateKeyAndHour(dateKey, hour);
   const timestampDate = new Date(timestamp);
+  let cat = event?.cat;
+  let sub = event?.sub === 'protein_shake' ? 'protein' : event?.sub;
+  let label = event?.sub === 'protein_shake' ? 'Protein' : event?.label;
+  let size = event?.size === LEGACY_EXTRA_SIZE ? 'L' : event?.size;
+  let intensity = event?.intensity;
+  let note = event?.note;
+
+  const addLegacyNote = (legacyName) => {
+    if (!legacyName || note) return;
+    note = `legacy:${legacyName}`;
+  };
+
+  if (cat === 'food' && ['bread', 'rice', 'pasta', 'potato', 'sweets', 'snack', 'fruit', 'photo'].includes(sub)) {
+    addLegacyNote(sub);
+    sub = 'carbs';
+    label = label || 'Carbs';
+  }
+
+  if (cat === 'drink') {
+    if (sub === 'poldeci') {
+      sub = 'spirits';
+      label = 'Spirits';
+      size = size || 'M';
+    }
+    if (['juice', 'soda'].includes(sub)) {
+      addLegacyNote(sub);
+      cat = 'food';
+      sub = 'carbs';
+      label = 'Carbs';
+      size = size || 'M';
+    }
+    if (sub === 'protein') {
+      addLegacyNote(sub);
+      cat = 'food';
+      sub = 'carbs';
+      label = 'Carbs';
+      size = size || 'S';
+    }
+  }
+
+  if (cat === 'activity') {
+    if (sub === 'walk') {
+      sub = 'exercise';
+      label = 'Exercise';
+      intensity = intensity || 'low';
+    }
+    if (sub === 'sex') {
+      sub = 'exercise';
+      label = 'Exercise';
+      intensity = intensity || 'med';
+    }
+    if (sub === 'drugs') {
+      sub = 'meds';
+      label = 'Meds';
+    }
+  }
+
+  if (cat === 'mood' && ['stress', 'nervousness', 'frustration'].includes(sub)) {
+    sub = 'adrenaline';
+    label = 'Adrenalin';
+    intensity = intensity || INTENSITY_BY_SIZE[size] || 'med';
+    size = size || SIZE_BY_INTENSITY[intensity];
+  }
+
   return {
     ...event,
-    size: event?.size === LEGACY_EXTRA_SIZE ? 'L' : event?.size,
+    cat,
+    sub,
+    label,
+    size,
+    intensity,
+    note,
     timestamp,
     timestampLocal: event?.timestampLocal || formatLocalTimestamp(timestampDate),
     dateKey: event?.dateKey || formatLocalDateKey(timestampDate)
@@ -163,7 +223,7 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
+  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
   const rows = events
     .slice()
     .sort((a, b) => eventSortValue(b) - eventSortValue(a))
@@ -172,7 +232,7 @@ function eventsToCsv(events) {
       const startDate = new Date(startTimestamp);
       const startHour = startDate.getHours() + (startDate.getMinutes() / 60);
       const durationHours = event.duration ? event.duration / 60 : 0;
-      const endTimestamp = event.cat === 'activity' && event.duration ? startTimestamp + (durationHours * 60 * 60 * 1000) : '';
+      const endTimestamp = ['activity', 'sleep'].includes(event.cat) && event.duration ? startTimestamp + (durationHours * 60 * 60 * 1000) : '';
       const date = eventDateParts(event, startTimestamp);
       const endDate = endTimestamp === '' ? null : eventDateParts(event, endTimestamp);
       return [
@@ -187,6 +247,7 @@ function eventsToCsv(events) {
         event.sub,
         event.label,
         event.size,
+        event.intensity,
         event.duration,
         event.carbs,
         event.confidence,
@@ -343,7 +404,7 @@ function Header({ selectedDateKey, setSelectedDateKey, onUndo, canUndo }) {
 function Timeline({ events }) {
   const project = (h) => Math.max(0, Math.min(100, ((h - 6) / 18) * 100));
   const heightFor = (e) => {
-    if (e.cat === 'activity') return 18;
+    if (['activity', 'sleep'].includes(e.cat)) return 18;
     const map = { S: 18, M: 30, L: 44 };
     return map[e.size] || 24;
   };
@@ -371,6 +432,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
   const pctRef = useRef(0);
   const sizeIdxRef = useRef(0);
   const pointerIdRef = useRef(null);
+  const touchDragRef = useRef(false);
   const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
@@ -387,6 +449,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     startX.current = null;
     startY.current = null;
     dragActive.current = false;
+    touchDragRef.current = false;
     pointerIdRef.current = null;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
@@ -405,6 +468,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
   };
 
   const onPointerDown = (e) => {
+    if (isVertical && touchDragRef.current) return;
     if (e.button !== undefined && e.button !== 0) return;
     startPoint.current = isVertical ? e.clientY : e.clientX;
     startX.current = e.clientX;
@@ -422,6 +486,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     setSizeIdx(0);
   };
   const onPointerMove = (e) => {
+    if (isVertical && touchDragRef.current) return;
     if (pointerIdRef.current !== e.pointerId) return;
     if (isVertical && !dragActive.current) {
       const dx = Math.abs(e.clientX - startX.current);
@@ -436,6 +501,7 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     updateDrag(e);
   };
   const onPointerUp = (e) => {
+    if (isVertical && touchDragRef.current) return;
     if (pointerIdRef.current !== e.pointerId) return;
     if (!dragActive.current) {
       resetDrag();
@@ -453,6 +519,51 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     if (pointerIdRef.current !== e.pointerId) return;
     resetDrag();
   };
+  const onTouchStart = (e) => {
+    if (!isVertical || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    touchDragRef.current = true;
+    startPoint.current = touch.clientY;
+    startX.current = touch.clientX;
+    startY.current = touch.clientY;
+    spanRef.current = ref.current?.offsetHeight || 160;
+    pctRef.current = 0;
+    sizeIdxRef.current = 0;
+    dragActive.current = false;
+    setSizeIdx(0);
+  };
+  const onTouchMove = (e) => {
+    if (!isVertical || !touchDragRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    if (!dragActive.current) {
+      const dx = Math.abs(touch.clientX - startX.current);
+      const dy = startY.current - touch.clientY;
+      if (dx > 6 && dx > Math.abs(dy)) return;
+      if (dy < 8) return;
+      dragActive.current = true;
+      setDragging(true);
+    }
+    e.preventDefault();
+    updateDrag(touch);
+  };
+  const onTouchEnd = (e) => {
+    if (!isVertical || !touchDragRef.current) return;
+    const touch = e.changedTouches[0];
+    if (!dragActive.current || !touch) {
+      resetDrag();
+      return;
+    }
+    e.preventDefault();
+    updateDrag(touch);
+    if (pctRef.current >= minCommitPct) {
+      onLog({ ...item, size: SIZES[sizeIdxRef.current] });
+    }
+    resetDrag();
+  };
+  const onTouchCancel = () => {
+    if (!isVertical || !touchDragRef.current) return;
+    resetDrag();
+  };
 
   const fillPct = dragging ? ((sizeIdx + 1) / SIZES.length) * 100 : 0;
   const currentSize = dragging ? SIZES[sizeIdx] : null;
@@ -466,6 +577,10 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      onTouchCancel={onTouchCancel}
       style={{ '--fill': `${fillPct}%` }}
     >
       <div className="tcard-fill" />
@@ -493,12 +608,16 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
   );
 }
 
-function TimerCard({ item, runningEvent, onStart, onStop }) {
+function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   const isRunning = runningEvent && runningEvent.sub === item.sub;
   return (
     <button
       className={`tcard timer-card cat-${item.cat} ${isRunning ? 'running' : ''}`}
-      onClick={() => isRunning ? onStop(runningEvent.id) : onStart(item)}
+      onClick={() => {
+        if (isRunning) return onStop(runningEvent.id);
+        if (item.timer) return onStart(item);
+        return onLog({ sub: item.sub, label: item.label, cat: item.cat });
+      }}
     >
       <div className="tcard-body">
         <div className="tcard-meta">
@@ -514,7 +633,7 @@ function TimerCard({ item, runningEvent, onStart, onStop }) {
             <span className="timer-val"><LiveTimer key={runningEvent.id} startTimestamp={runningEvent.timestamp}/></span>
           </div>
         ) : (
-          <div className="play-btn">▶</div>
+          <div className="play-btn">{item.timer ? '▶' : '+'}</div>
         )}
       </div>
     </button>
@@ -536,14 +655,15 @@ function LiveTimer({ startTimestamp }) {
 }
 
 function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRefresh }) {
-  const featuredFood = ['kuluri', 'bread', 'sweets', 'fruit'];
-  const featuredDrink = ['water', 'coffee', 'beer', 'wine', 'poldeci', 'protein_shake'];
-  const featuredMood = ['stress', 'happy', 'nervousness'];
+  const featuredFood = ['carbs', 'kuluri', 'junk'];
+  const featuredDrink = ['coffee', 'beer', 'wine', 'spirits'];
+  const featuredMood = ['adrenaline', 'sick'];
 
   const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const moodItems = featuredMood.map((s) => TURBO.find(t => t.sub === s));
-  const timerItems = TURBO.filter(t => t.timer);
+  const activityItems = TURBO.filter(t => t.cat === 'activity');
+  const sleepItems = TURBO.filter(t => t.timer && t.cat === 'sleep');
 
   const carbs = events
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
@@ -589,13 +709,23 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
         <small>ŤUKNI · ZAPNI / VYPNI</small>
       </div>
       <div className="turbo-grid timers">
-        {timerItems.map((item) => (
-          <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer}/>
+        {activityItems.map((item) => (
+          <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} onLog={onLogSize}/>
+        ))}
+      </div>
+
+      <div className="section-title" style={{marginTop: 18}}>
+        <h3>Spánok</h3>
+        <small>ŤUKNI · ZAPNI / VYPNI</small>
+      </div>
+      <div className="turbo-grid timers">
+        {sleepItems.map((item) => (
+          <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} onLog={onLogSize}/>
         ))}
       </div>
       <button className="content-version" onClick={onRefresh} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
         <Icon.Refresh/>
-        <span>v{APP_VERSION}</span>
+        <span>{APP_VERSION}</span>
       </button>
       <div style={{height: 24}}/>
     </div>
@@ -616,7 +746,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
         <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
-        {['all','food','drink','activity','mood'].map((f) => (
+        {['all','food','drink','activity','mood','sleep'].map((f) => (
           <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
             {f === 'all' ? `Všetko · ${events.length}` : `${CAT_LABEL[f]} · ${events.filter(e=>e.cat===f).length}`}
           </button>
@@ -625,7 +755,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
       <div className="rec-rail">
         {sorted.length === 0 && <div className="rec-empty">Žiadne záznamy</div>}
         {sorted.map((e) => {
-          const timeStep = e.cat === 'activity' ? 5 : 10;
+          const timeStep = ['activity', 'sleep'].includes(e.cat) ? 5 : 10;
           const durationValue = Math.max(5, e.duration || 5);
           return (
           <React.Fragment key={e.id}>
@@ -653,7 +783,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
                     <button className="tbtn" onClick={() => onAdjustTime(e.id, +timeStep)}>+{timeStep} min</button>
                   </div>
                 </div>
-                {e.cat === 'activity' && !e.running && (
+                {['activity', 'sleep'].includes(e.cat) && !e.running && (
                   <div>
                     <div className="lbl" style={{marginBottom: 8}}>Dĺžka záznamu</div>
                     <div className="time-adjust duration-adjust">
@@ -723,7 +853,13 @@ function App() {
   };
 
   const onLogSize = (data) => {
-    addEvent({ sub: data.sub, label: data.label, cat: data.cat, size: data.size });
+    addEvent({
+      sub: data.sub,
+      label: data.label,
+      cat: data.cat,
+      size: data.size,
+      intensity: data.cat === 'mood' ? INTENSITY_BY_SIZE[data.size] : undefined
+    });
   };
   const onStartTimer = (item) => {
     if (runningEvent) return;
@@ -752,7 +888,7 @@ function App() {
   };
   const onAdjustDuration = (id, deltaMin) => {
     setEvents(es => es.map(e => {
-      if (e.id !== id || e.cat !== 'activity') return e;
+      if (e.id !== id || !['activity', 'sleep'].includes(e.cat)) return e;
       const current = Math.max(5, e.duration || 5);
       return { ...e, duration: Math.max(5, current + deltaMin) };
     }));
@@ -791,7 +927,7 @@ function App() {
     cameraInputRef.current?.click();
   };
   const refreshApp = () => {
-    showToast(<>Obnovujem appku · v{APP_VERSION}</>);
+    showToast(<>Obnovujem appku · {APP_VERSION}</>);
     setTimeout(() => window.location.reload(), 120);
   };
   const onCameraFile = async (event) => {
@@ -818,7 +954,7 @@ function App() {
       const grams = Math.max(0, Math.round(Number(result.grams) || 0));
       const label = labelFromAiResult(result);
       addEvent({
-        sub: 'photo',
+        sub: 'carbs',
         label,
         cat: 'food',
         carbs: grams,

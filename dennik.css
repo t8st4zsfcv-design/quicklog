@@ -154,6 +154,7 @@ button {
 .ev.drink { background: var(--drink); }
 .ev.activity { background: var(--green); }
 .ev.mood { background: var(--red); }
+.ev.sleep { background: rgba(247, 244, 237, 0.7); }
 
 .timeline-axis {
   position: absolute;
@@ -259,11 +260,11 @@ button {
 }
 
 .content-version {
-  justify-self: end;
-  display: inline-grid;
+  display: grid;
   grid-template-columns: auto auto;
   align-items: center;
   gap: 5px;
+  width: max-content;
   margin: 22px 18px 4px auto;
   height: 30px;
   padding: 0 9px;
