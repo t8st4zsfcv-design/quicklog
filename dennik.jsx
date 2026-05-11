@@ -26,7 +26,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.1';
+const APP_VERSION = 'V2.2';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -463,6 +463,75 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     setSizeIdx((currentIdx) => currentIdx === idx ? currentIdx : idx);
   };
 
+  const beginVerticalTouch = (touch) => {
+    touchDragRef.current = true;
+    startPoint.current = touch.clientY;
+    startX.current = touch.clientX;
+    startY.current = touch.clientY;
+    spanRef.current = ref.current?.offsetHeight || 160;
+    pctRef.current = 0;
+    sizeIdxRef.current = 0;
+    dragActive.current = false;
+    setSizeIdx(0);
+  };
+
+  const moveVerticalTouch = (touch, originalEvent) => {
+    if (!touchDragRef.current) return;
+    if (!dragActive.current) {
+      const dx = Math.abs(touch.clientX - startX.current);
+      const dy = startY.current - touch.clientY;
+      if (dx > 6 && dx > Math.abs(dy)) return;
+      if (dy < 8) return;
+      dragActive.current = true;
+      setDragging(true);
+    }
+    originalEvent.preventDefault();
+    updateDrag(touch);
+  };
+
+  const endVerticalTouch = (touch, originalEvent) => {
+    if (!touchDragRef.current) return;
+    if (!dragActive.current || !touch) {
+      resetDrag();
+      return;
+    }
+    originalEvent.preventDefault();
+    updateDrag(touch);
+    if (pctRef.current >= minCommitPct) {
+      onLog({ ...item, size: SIZES[sizeIdxRef.current] });
+    }
+    resetDrag();
+  };
+
+  useEffect(() => {
+    if (!isVertical || !ref.current) return undefined;
+    const node = ref.current;
+    const handleTouchStart = (event) => {
+      if (event.touches.length !== 1) return;
+      beginVerticalTouch(event.touches[0]);
+    };
+    const handleTouchMove = (event) => {
+      if (event.touches.length !== 1) return;
+      moveVerticalTouch(event.touches[0], event);
+    };
+    const handleTouchEnd = (event) => {
+      endVerticalTouch(event.changedTouches[0], event);
+    };
+    const handleTouchCancel = () => {
+      if (touchDragRef.current) resetDrag();
+    };
+    node.addEventListener('touchstart', handleTouchStart, { passive: true });
+    node.addEventListener('touchmove', handleTouchMove, { passive: false });
+    node.addEventListener('touchend', handleTouchEnd, { passive: false });
+    node.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+    return () => {
+      node.removeEventListener('touchstart', handleTouchStart);
+      node.removeEventListener('touchmove', handleTouchMove);
+      node.removeEventListener('touchend', handleTouchEnd);
+      node.removeEventListener('touchcancel', handleTouchCancel);
+    };
+  }, [isVertical, item, onLog]);
+
   const onPointerDown = (e) => {
     if (isVertical && touchDragRef.current) return;
     if (e.button !== undefined && e.button !== 0) return;
@@ -515,52 +584,6 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
     if (pointerIdRef.current !== e.pointerId) return;
     resetDrag();
   };
-  const onTouchStart = (e) => {
-    if (!isVertical || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    touchDragRef.current = true;
-    startPoint.current = touch.clientY;
-    startX.current = touch.clientX;
-    startY.current = touch.clientY;
-    spanRef.current = ref.current?.offsetHeight || 160;
-    pctRef.current = 0;
-    sizeIdxRef.current = 0;
-    dragActive.current = false;
-    setSizeIdx(0);
-  };
-  const onTouchMove = (e) => {
-    if (!isVertical || !touchDragRef.current || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    if (!dragActive.current) {
-      const dx = Math.abs(touch.clientX - startX.current);
-      const dy = startY.current - touch.clientY;
-      if (dx > 6 && dx > Math.abs(dy)) return;
-      if (dy < 8) return;
-      dragActive.current = true;
-      setDragging(true);
-    }
-    e.preventDefault();
-    updateDrag(touch);
-  };
-  const onTouchEnd = (e) => {
-    if (!isVertical || !touchDragRef.current) return;
-    const touch = e.changedTouches[0];
-    if (!dragActive.current || !touch) {
-      resetDrag();
-      return;
-    }
-    e.preventDefault();
-    updateDrag(touch);
-    if (pctRef.current >= minCommitPct) {
-      onLog({ ...item, size: SIZES[sizeIdxRef.current] });
-    }
-    resetDrag();
-  };
-  const onTouchCancel = () => {
-    if (!isVertical || !touchDragRef.current) return;
-    resetDrag();
-  };
-
   const fillPct = dragging ? ((sizeIdx + 1) / SIZES.length) * 100 : 0;
   const currentSize = dragging ? SIZES[sizeIdx] : null;
 
@@ -573,10 +596,6 @@ function DragCard({ item, onLog, direction = 'horizontal' }) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={onPointerCancel}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
-      onTouchCancel={onTouchCancel}
       style={{ '--fill': `${fillPct}%` }}
     >
       <div className="tcard-fill" />
