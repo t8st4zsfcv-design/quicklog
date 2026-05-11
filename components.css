@@ -303,6 +303,22 @@
   color: rgba(247,244,237,0.65);
 }
 .tcard.timer-card.running .play-btn { display: none; }
+.tcard.timer-card.sub-cannula {
+  background: rgba(127, 201, 199, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(127, 201, 199, 0.14);
+}
+.tcard.timer-card.sub-meds {
+  background: rgba(255, 208, 163, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 208, 163, 0.13);
+}
+.tcard.timer-card.sub-cannula .play-btn {
+  color: #a7dedb;
+  background: rgba(127, 201, 199, 0.14);
+}
+.tcard.timer-card.sub-meds .play-btn {
+  color: var(--peach);
+  background: rgba(255, 208, 163, 0.14);
+}
 
 /* ============================================
    Records detail expansion
@@ -377,6 +393,35 @@
   grid-template-columns: 1fr auto;
   gap: 6px;
 }
+.activity-detail-field {
+  display: grid;
+  gap: 8px;
+}
+.activity-detail-field span {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: rgba(247,244,237,0.58);
+  text-transform: uppercase;
+}
+.activity-detail-field textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 86px;
+  border: 1px solid rgba(247,244,237,0.12);
+  border-radius: 12px;
+  padding: 12px;
+  background: rgba(255,255,255,0.07);
+  color: #f7f4ed;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  line-height: 1.35;
+  outline: none;
+}
+.activity-detail-field textarea:focus {
+  border-color: rgba(127, 201, 199, 0.38);
+  background: rgba(255,255,255,0.1);
+}
 .rec-detail .actions .btn {
   border: 0;
   padding: 11px 14px;
@@ -389,6 +434,8 @@
 }
 .rec-detail .actions .btn-ghost { background: rgba(255,255,255,0.06); color: #f7f4ed; }
 .rec-detail .actions .btn-ghost:hover { background: rgba(255,255,255,0.12); }
+.rec-detail .actions .btn-save { background: var(--green); color: #f7f4ed; }
+.rec-detail .actions .btn-save:hover { background: rgba(79, 138, 120, 0.82); }
 .rec-detail .actions .btn-danger { background: rgba(255, 68, 47, 0.16); color: #ff8978; }
 .rec-detail .actions .btn-danger:hover { background: rgba(255, 68, 47, 0.24); }
 

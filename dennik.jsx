@@ -33,7 +33,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { S: 'nízka intenzita', M: 'stredná intenzita', L: 'vysoká intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.4';
+const APP_VERSION = 'V2.5';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -241,7 +241,7 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'source'];
+  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'activityDetail', 'source'];
   const rows = events
     .slice()
     .sort((a, b) => eventSortValue(b) - eventSortValue(a))
@@ -270,6 +270,7 @@ function eventsToCsv(events) {
         event.carbs,
         event.confidence,
         event.note,
+        event.activityDetail,
         event.source || 'manual'
       ];
     });
@@ -649,7 +650,7 @@ function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   const isRunning = runningEvent && runningEvent.sub === item.sub;
   return (
     <button
-      className={`tcard timer-card cat-${item.cat} ${isRunning ? 'running' : ''}`}
+      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${isRunning ? 'running' : ''}`}
       onClick={() => {
         if (isRunning) return onStop(runningEvent.id);
         if (item.timer) return onStart(item);
@@ -777,7 +778,31 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
 }
 
 // ====== Records ======
-function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv }) {
+function ActivityDetailEditor({ event, onSave, onCancel }) {
+  const [draft, setDraft] = useState(event.activityDetail || '');
+  const isMeds = event.sub === 'meds';
+  const label = isMeds ? 'Medication / substance detail' : 'Cannula detail / site / note';
+  const placeholder = isMeds ? 'liek, dávka, doplnok, typ medikamentu…' : 'miesto výmeny, leakage, bolesť, krv…';
+
+  return (
+    <div className={`rec-detail detail-activity detail-${event.sub}`}>
+      <div className="row">
+        <span className="lbl">Detail</span>
+        <span className="val">{event.label} · {event.time}</span>
+      </div>
+      <label className="activity-detail-field">
+        <span>{label}</span>
+        <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} rows="3" />
+      </label>
+      <div className="actions">
+        <button className="btn btn-save" onClick={() => onSave(event.id, draft.trim())}>Save</button>
+        <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+function Records({ events, onAdjustTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
@@ -801,6 +826,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
         {sorted.map((e) => {
           const timeStep = ['activity', 'sleep'].includes(e.cat) ? 5 : 10;
           const durationValue = Math.max(5, e.duration || 5);
+          const isActivityDetail = ['cannula', 'meds'].includes(e.sub);
           return (
           <React.Fragment key={e.id}>
             <button className={`rec-row is-button ${e.cat}`} onClick={() => setOpenId(openId === e.id ? null : e.id)}>
@@ -808,12 +834,19 @@ function Records({ events, onAdjustTime, onAdjustDuration, onDelete, onExportCsv
               <span className={`cat-dot rec-row-dot dot-${e.cat}`} />
               <div>
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
-                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}</div>
+                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
               </div>
               {e.size && <span className="rec-size">{e.size}</span>}
               {e.running && <span className="rec-size run">RUN</span>}
             </button>
-            {openId === e.id && (
+            {openId === e.id && isActivityDetail && (
+              <ActivityDetailEditor
+                event={e}
+                onSave={(id, detail) => { onActivityDetail(id, detail); setOpenId(null); }}
+                onCancel={() => setOpenId(null)}
+              />
+            )}
+            {openId === e.id && !isActivityDetail && (
               <div className={`rec-detail detail-${e.cat}`}>
                 <div className="row">
                   <span className="lbl">Detail</span>
@@ -936,6 +969,13 @@ function App() {
       return { ...e, duration: Math.max(5, current + deltaMin) };
     }));
   };
+  const onActivityDetail = (id, activityDetail) => {
+    setEvents(es => es.map(e => {
+      if (e.id !== id || !['cannula', 'meds'].includes(e.sub)) return e;
+      return { ...e, activityDetail };
+    }));
+    showToast(<>Detail uložený</>);
+  };
   const onDelete = (id) => {
     const evt = events.find(e => e.id === id);
     if (!evt) return;
@@ -1031,7 +1071,7 @@ function App() {
             cameraBusy={cameraBusy}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
