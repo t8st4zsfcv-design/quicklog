@@ -374,6 +374,7 @@
 .rec-detail .time-adjust button.tbtn:hover { background: rgba(255,255,255,0.14); }
 .rec-detail .time-adjust .now-time {
   display: grid; place-items: center;
+  border: 0;
   background: var(--peach);
   color: var(--bg-3);
   border-radius: 10px;
@@ -382,16 +383,39 @@
   font-size: 18px;
   letter-spacing: -0.02em;
   padding: 0 18px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
 }
 .rec-detail.detail-activity .time-adjust .now-time,
 .rec-detail.detail-sleep .time-adjust .now-time {
   background: var(--green);
   color: #f7f4ed;
 }
+.native-time-trigger span {
+  position: relative;
+  z-index: 1;
+  pointer-events: none;
+}
+.native-time-trigger input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+  color: transparent;
+  background: transparent;
+}
 .rec-detail .actions {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 6px;
+}
+.rec-detail .actions.activity-detail-actions {
+  grid-template-columns: 1fr auto auto;
 }
 .activity-detail-field {
   display: grid;

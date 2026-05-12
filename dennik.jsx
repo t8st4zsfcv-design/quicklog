@@ -30,7 +30,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { S: 'nízka intenzita', M: 'stredná intenzita', L: 'vysoká intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V2.7';
+const APP_VERSION = 'V2.9';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -777,7 +777,23 @@ function Home({ events, runningEvent, onLogSize, onStartTimer, onStopTimer, onRe
 }
 
 // ====== Records ======
-function ActivityDetailEditor({ event, onSave, onCancel }) {
+function TimeAdjuster({ event, step, onAdjustTime, onSetTime }) {
+  return (
+    <div>
+      <div className="lbl" style={{marginBottom: 8}}>Posuň čas záznamu</div>
+      <div className="time-adjust">
+        <button className="tbtn" onClick={() => onAdjustTime(event.id, -step)}>−{step} min</button>
+        <label className="now-time native-time-trigger" aria-label={`Upraviť čas ${event.time}`}>
+          <span>{event.time}</span>
+          <input type="time" value={event.time || '00:00'} onChange={(e) => onSetTime(event.id, e.target.value)} />
+        </label>
+        <button className="tbtn" onClick={() => onAdjustTime(event.id, +step)}>+{step} min</button>
+      </div>
+    </div>
+  );
+}
+
+function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel, onDelete }) {
   const [draft, setDraft] = useState(event.activityDetail || '');
   const isMeds = event.sub === 'meds';
   const label = isMeds ? 'Medication / substance detail' : 'Cannula detail / site / note';
@@ -789,19 +805,21 @@ function ActivityDetailEditor({ event, onSave, onCancel }) {
         <span className="lbl">Detail</span>
         <span className="val">{event.label} · {event.time}</span>
       </div>
+      <TimeAdjuster event={event} step={10} onAdjustTime={onAdjustTime} onSetTime={onSetTime} />
       <label className="activity-detail-field">
         <span>{label}</span>
         <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} rows="3" />
       </label>
-      <div className="actions">
+      <div className="actions activity-detail-actions">
         <button className="btn btn-save" onClick={() => onSave(event.id, draft.trim())}>Save</button>
         <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
+        <button className="btn btn-danger" onClick={() => onDelete(event.id)}>Zmazať</button>
       </div>
     </div>
   );
 }
 
-function Records({ events, onAdjustTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, onAdjustTime, onSetTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
@@ -841,8 +859,11 @@ function Records({ events, onAdjustTime, onAdjustDuration, onActivityDetail, onD
             {openId === e.id && isActivityDetail && (
               <ActivityDetailEditor
                 event={e}
+                onAdjustTime={onAdjustTime}
+                onSetTime={onSetTime}
                 onSave={(id, detail) => { onActivityDetail(id, detail); setOpenId(null); }}
                 onCancel={() => setOpenId(null)}
+                onDelete={(id) => { onDelete(id); setOpenId(null); }}
               />
             )}
             {openId === e.id && !isActivityDetail && (
@@ -851,14 +872,7 @@ function Records({ events, onAdjustTime, onAdjustDuration, onActivityDetail, onD
                   <span className="lbl">Detail</span>
                   <span className="val">{e.label}{e.size ? ` · ${e.size}` : ''}{e.carbs ? ` · ${e.carbs}g` : ''}</span>
                 </div>
-                <div>
-                  <div className="lbl" style={{marginBottom: 8}}>Posuň čas záznamu</div>
-                  <div className="time-adjust">
-                    <button className="tbtn" onClick={() => onAdjustTime(e.id, -timeStep)}>−{timeStep} min</button>
-                    <div className="now-time">{e.time}</div>
-                    <button className="tbtn" onClick={() => onAdjustTime(e.id, +timeStep)}>+{timeStep} min</button>
-                  </div>
-                </div>
+                <TimeAdjuster event={e} step={timeStep} onAdjustTime={onAdjustTime} onSetTime={onSetTime} />
                 {['activity', 'sleep'].includes(e.cat) && !e.running && (
                   <div>
                     <div className="lbl" style={{marginBottom: 8}}>Dĺžka záznamu</div>
@@ -957,6 +971,18 @@ function App() {
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
       const newHour = Math.max(0, Math.min(23.99, e.hour + deltaMin / 60));
+      const timestamp = timestampFromDateKeyAndHour(e.dateKey, newHour);
+      return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
+    }));
+  };
+  const onSetTime = (id, timeValue) => {
+    const match = String(timeValue || '').match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return;
+    const h = Math.max(0, Math.min(23, Number(match[1])));
+    const m = Math.max(0, Math.min(59, Number(match[2])));
+    const newHour = h + (m / 60);
+    setEvents(es => es.map(e => {
+      if (e.id !== id) return e;
       const timestamp = timestampFromDateKeyAndHour(e.dateKey, newHour);
       return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
     }));
@@ -1070,7 +1096,7 @@ function App() {
             cameraBusy={cameraBusy}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
