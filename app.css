@@ -180,15 +180,35 @@ button {
   background: var(--peach);
   color: #405956;
 }
+.stats.has-running {
+  grid-template-columns: 1fr auto auto auto;
+}
 
-.sick-banner {
-  position: absolute;
-  right: 18px;
-  top: 10px;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: rgba(255, 68, 47, 0.14);
-  color: #405956;
+.running-badge {
+  align-self: center;
+  min-width: 70px;
+  padding: 8px 10px 9px;
+  border-radius: 10px;
+  background: rgba(255, 68, 47, 0.13);
+  color: var(--red);
+  text-align: center;
+}
+.running-badge.running-activity {
+  background: rgba(79, 138, 120, 0.16);
+  color: #35514d;
+}
+.running-badge b {
+  display: block;
+  font-family: var(--display);
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+.running-badge span {
+  display: block;
+  margin-top: 4px;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
