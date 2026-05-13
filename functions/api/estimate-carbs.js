@@ -46,9 +46,10 @@ export async function onRequestPost({ request, env }) {
               {
                 type: "input_text",
                 text: [
-                  "Estimate visible carbohydrates in this food or drink.",
+                  "Estimate visible carbohydrates for QuickLog V3 food events or beer.",
                   "Return only JSON matching the schema.",
                   "Return total carbohydrate grams only; do not use carbohydrate exchange units.",
+                  "QuickLog V3 counts carbs for food and beer only; spirits, water and plain coffee should usually be 0 unless visible sugar is present.",
                   "short_note must be one natural English sentence in first person, naming the likely food, e.g. \"It looks like rice pudding.\"",
                   "If unsure, use confidence low and a conservative middle estimate.",
                   "Do not give medical advice."

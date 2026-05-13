@@ -1,7 +1,8 @@
 export async function onRequestGet() {
   return json(200, {
     events: [],
-    storage: "localStorage"
+    storage: "localStorage",
+    taxonomy: currentTaxonomy()
   });
 }
 
@@ -21,7 +22,8 @@ export async function onRequestPut({ request }) {
   return json(200, {
     ok: true,
     count: events.length,
-    storage: "localStorage"
+    storage: "localStorage",
+    taxonomy: currentTaxonomy()
   });
 }
 
@@ -44,5 +46,15 @@ function baseHeaders() {
   return {
     "content-type": "application/json; charset=utf-8",
     "cache-control": "no-store"
+  };
+}
+
+function currentTaxonomy() {
+  return {
+    version: "V3.0",
+    food: ["carbs", "junk"],
+    drink: ["beer", "spirits"],
+    activity: ["exercise", "cannula", "meds"],
+    mood: ["adrenaline", "sick"]
   };
 }

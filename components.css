@@ -126,6 +126,8 @@
 }
 .tcard.drag.dragging .tcard-ticks::before { left: 33.333%; }
 .tcard.drag.dragging .tcard-ticks::after { left: 66.666%; }
+.tcard.drag.steps-2.dragging .tcard-ticks::before { left: 50%; }
+.tcard.drag.steps-2.dragging .tcard-ticks::after { display: none; }
 .tcard.drag.vertical.dragging .tcard-ticks::before,
 .tcard.drag.vertical.dragging .tcard-ticks::after {
   left: 18%;
@@ -271,6 +273,13 @@
   background: linear-gradient(135deg, var(--peach) 0%, var(--peach-2) 100%);
   color: #16201f;
   box-shadow: inset 0 0 0 1px rgba(255, 208, 163, 0.8), 0 10px 24px rgba(22, 32, 31, 0.16);
+}
+.tcard.action-card.running {
+  background: rgba(255, 68, 47, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 68, 47, 0.32);
+}
+.tcard.action-card.running .timer-pop {
+  color: rgba(247,244,237,0.78);
 }
 .tcard.timer-card.running .tcard-meta,
 .tcard.timer-card.running .timer-pop {
