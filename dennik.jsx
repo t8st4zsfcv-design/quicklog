@@ -26,7 +26,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.0';
+const APP_VERSION = 'V3.2';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -448,7 +448,7 @@ function Timeline({ events }) {
 }
 
 // ====== Step drag card (S/M/L) ======
-function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES }) {
+function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWidth = false }) {
   const [dragging, setDragging] = useState(false);
   const [sizeIdx, setSizeIdx] = useState(0);
   const startPoint = useRef(null);
@@ -462,7 +462,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES }) {
   const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
-  const isVertical = direction === 'vertical';
+  const isVertical = direction === 'vertical' && !fullWidth;
 
   const computeIdx = (p) => {
     const idx = Math.floor(Math.min(0.999, Math.max(0, p)) * sizes.length);
@@ -619,7 +619,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES }) {
   return (
     <div
       ref={ref}
-      className={`tcard drag steps-${sizes.length} ${isVertical ? 'vertical' : 'horizontal'} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
+      className={`tcard drag steps-${sizes.length} ${isVertical ? 'vertical' : 'horizontal'} ${fullWidth ? 'full-width' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
       data-size={currentSize || ''}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -637,11 +637,16 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES }) {
         <div className="name">{item.label}</div>
       </div>
       <div className="tcard-right">
-        <div className="value-bars" aria-label={currentSize ? sizeHintFor(item, currentSize) : 'Vyber hodnotu'}>
-          {sizes.map((s, idx) => (
-            <span key={s} className={dragging && idx <= sizeIdx ? 'active' : ''} />
-          ))}
-        </div>
+        {dragging ? (
+          <div className="size-pop">
+            <div className="size-big">{currentSize}</div>
+            <div className="size-hint">{sizeHintFor(item, currentSize)}</div>
+          </div>
+        ) : (
+          <div className="size-ladder">
+            {sizes.map((s) => <span key={s}>{s}</span>)}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -679,50 +684,22 @@ function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   );
 }
 
-function MoodCard({ item, onLog }) {
-  return <DragCard item={item} onLog={onLog} sizes={ADRENALINE_LEVELS} />;
+function MoodCard({ item, onLog, fullWidth = false }) {
+  return <DragCard item={item} onLog={onLog} sizes={ADRENALINE_LEVELS} fullWidth={fullWidth} />;
 }
 
-function SickCard({ runningEvent, onStart, onStop }) {
-  const isRunning = Boolean(runningEvent);
+function CameraCard({ onOpenCamera, disabled }) {
   return (
-    <button
-      className={`tcard action-card sick-card cat-mood ${isRunning ? 'running' : ''}`}
-      onClick={() => isRunning ? onStop(runningEvent.id) : onStart()}
-    >
+    <button className="tcard action-card camera-card cat-food" onClick={onOpenCamera} disabled={disabled} aria-label="Otvoriť kameru">
       <div className="tcard-body">
         <div className="tcard-meta">
-          <span className="cat-dot dot-mood" />
-          <span className="sub">mood</span>
+          <span className="cat-dot dot-food" />
+          <span className="sub">camera</span>
         </div>
-        <div className="name">Sick</div>
+        <div className="name">Camera</div>
       </div>
       <div className="tcard-right">
-        {isRunning ? (
-          <div className="timer-pop">
-            <span className="rec-dot" />
-            <span className="timer-val"><LiveTimer key={runningEvent.id} startTimestamp={runningEvent.timestamp}/></span>
-          </div>
-        ) : (
-          <div className="play-btn">+</div>
-        )}
-      </div>
-    </button>
-  );
-}
-
-function CameraCard({ onOpenCamera, disabled, countdown }) {
-  return (
-    <button className={`tcard action-card camera-card cat-food ${countdown ? 'counting' : ''}`} onClick={onOpenCamera} disabled={disabled} aria-label="Otvoriť kameru">
-      <div className="camera-card-icon">
-        {countdown ? <span>{countdown}</span> : disabled ? <span>AI</span> : <Icon.Cam/>}
-      </div>
-      <div className="tcard-body">
-        <div className="tcard-meta">
-          <span className="sub">ai camera</span>
-        </div>
-        <div className="name">Camera AI</div>
-        <div className="camera-note">{disabled ? 'AI analyzuje fotku' : countdown ? 'Pripravujem kameru' : 'Odfotiť jedlo pre odhad sacharidov'}</div>
+        <div className="camera-card-icon"><Icon.Cam/></div>
       </div>
     </button>
   );
@@ -737,7 +714,7 @@ function LiveTimer({ startTimestamp }) {
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
 }
 
-function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, cameraCountdown }) {
+function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
   const featuredFood = ['carbs', 'junk'];
   const featuredDrink = ['beer', 'spirits'];
 
@@ -750,52 +727,56 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
     .reduce((s, e) => s + (e.carbs || 0), 0);
   const activeToday = events.some(e => e.running) ? 1 : 0;
-  const runningStatus = runningSickEvent || runningEvent;
-  const runningLabel = runningStatus?.sub === 'sick' ? 'SICK' : (runningStatus?.label || 'BEŽÍ').toUpperCase();
 
   return (
     <div className="scroll">
       <Timeline events={events}/>
 
-      <div className={`stats ${runningStatus ? 'has-running' : ''}`}>
+      <div className="stats">
         <div className="stat-big">{carbs}<span className="unit">g</span></div>
         <div className="stat-mini"><b>{events.length}</b>EVENTOV</div>
         <div className="stat-mini"><b>{activeToday}</b>AKTÍV.</div>
-        {runningStatus && (
-          <div className={`running-badge running-${runningStatus.cat}`}>
-            <b><LiveTimer key={runningStatus.id} startTimestamp={runningStatus.timestamp}/></b>
-            <span>{runningLabel}</span>
+        {runningSickEvent && (
+          <div className="stat-mini stat-sick">
+            <b><LiveTimer startTimestamp={runningSickEvent.timestamp}/></b>
+            SICK
           </div>
         )}
       </div>
 
-      <div className="camera-action-row">
-        <CameraCard onOpenCamera={onOpenCamera} disabled={cameraBusy} countdown={cameraCountdown}/>
-      </div>
+      {aiResult && (
+        <div className="ai-result-hero-card">
+          <div className="ai-hero-food">{aiResult.label}</div>
+          <div className="ai-hero-carbs">
+            <span className="ai-hero-number">{aiResult.grams}</span>
+            <span className="ai-hero-unit">G</span>
+          </div>
+          <div className="ai-hero-conf">
+            Confidence: <span className={`ai-hero-badge conf-${aiResult.confidence}`}>{aiResult.confidence}</span>
+          </div>
+          <button className="ai-hero-dismiss" onClick={onDismissAiResult}>✕</button>
+        </div>
+      )}
 
       <div className="section-title">
-        <h3>Jedlo</h3>
+        <h3>Logovanie</h3>
         <small>POTIAHNI VPRAVO PRE S · M · L</small>
       </div>
-      <div className="turbo-grid">
-        {foodItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
-      </div>
 
-      <div className="section-title" style={{marginTop: 18}}>
-        <h3>Pitie</h3>
-        <small>POTIAHNI VPRAVO PRE S · M · L</small>
-      </div>
-      <div className="turbo-grid drink-grid">
-        {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
-      </div>
+      <div className="turbo-stack">
+        {foodItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
 
-      <div className="section-title" style={{marginTop: 18}}>
-        <h3>Nálada</h3>
-        <small>ADRENALIN MED / HIGH · SICK TOGGLE</small>
-      </div>
-      <div className="turbo-grid">
-        <MoodCard item={adrenalineItem} onLog={onLogSize}/>
-        <SickCard runningEvent={runningSickEvent} onStart={onStartSick} onStop={onStopSick}/>
+        <button className="camera-banner" onClick={onOpenCamera} disabled={cameraBusy}>
+          <div className="camera-banner-icon"><Icon.Cam/></div>
+          <div className="camera-banner-text">
+            <div className="camera-banner-title">Camera AI</div>
+            <div className="camera-banner-hint">odfotiť jedlo · AI odhad sacharidov</div>
+          </div>
+        </button>
+
+        {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
+
+        <MoodCard item={adrenalineItem} onLog={onLogSize} fullWidth/>
       </div>
 
       <div className="section-title" style={{marginTop: 18}}>
@@ -806,6 +787,13 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
         {activityItems.map((item) => (
           <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} onLog={onLogSize}/>
         ))}
+        <TimerCard
+          item={{ sub: 'sick', cat: 'mood', label: 'Sick', timer: true }}
+          runningEvent={runningSickEvent}
+          onStart={onStartSick}
+          onStop={onStopSick}
+          onLog={onLogSize}
+        />
       </div>
 
       <button className="content-version" onClick={onRefresh} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
@@ -953,8 +941,8 @@ function App() {
   const [events, setEvents] = useState(loadLocalEvents);
   const [history, setHistory] = useState([]);
   const [cameraBusy, setCameraBusy] = useState(false);
-  const [cameraCountdown, setCameraCountdown] = useState(0);
   const [toast, setToast] = useState(null);
+  const [aiResult, setAiResult] = useState(null);
   const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
 
@@ -967,6 +955,12 @@ function App() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
     } catch {}
   }, [events]);
+
+  useEffect(() => {
+    if (!aiResult) return undefined;
+    const timeout = setTimeout(() => setAiResult(null), 5000);
+    return () => clearTimeout(timeout);
+  }, [aiResult]);
 
   const showToast = (msg, duration = 2600) => {
     setToast(msg);
@@ -1093,10 +1087,6 @@ function App() {
   };
   const openCamera = () => {
     if (cameraBusy) return;
-    setCameraCountdown(3);
-    [1, 2, 3].forEach((step) => {
-      setTimeout(() => setCameraCountdown((value) => Math.max(0, value - 1)), step * 420);
-    });
     cameraInputRef.current?.click();
   };
   const refreshApp = () => {
@@ -1126,12 +1116,16 @@ function App() {
       }
       const grams = normalizedCarbsValue(result.grams);
       const label = labelFromAiResult(result);
+      const confidence = result.confidence || 'medium';
+
+      setAiResult({ label, grams, confidence, note: result.short_note });
+
       addEvent({
         sub: 'carbs',
         label,
         cat: 'food',
         carbs: grams,
-        confidence: result.confidence,
+        confidence,
         note: result.short_note,
         source: 'ai_camera'
       });
@@ -1161,7 +1155,8 @@ function App() {
             onRefresh={refreshApp}
             onOpenCamera={openCamera}
             cameraBusy={cameraBusy}
-            cameraCountdown={cameraCountdown}
+            aiResult={aiResult}
+            onDismissAiResult={() => setAiResult(null)}
           />
         )}
         {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
