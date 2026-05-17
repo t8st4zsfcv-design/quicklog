@@ -1,6 +1,6 @@
 {
-  "name": "QuickLog",
-  "short_name": "QuickLog",
+  "name": "Loguj",
+  "short_name": "Loguj",
   "description": "Local-first diary for food, drinks, activity, mood, and camera carb estimates.",
   "id": "/",
   "start_url": "/",
