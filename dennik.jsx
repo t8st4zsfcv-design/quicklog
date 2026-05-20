@@ -26,7 +26,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.4';
+const APP_VERSION = 'V3.5';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -463,7 +463,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
-  const dragZoneRatio = 0.38;
+  const dragZoneRatio = 0.5;
   const isVertical = direction === 'vertical' && !fullWidth;
 
   const isInDragZone = (clientX) => {
@@ -598,11 +598,11 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     if (!isVertical && !dragActive.current) {
       const dx = e.clientX - startX.current;
       const dy = Math.abs(e.clientY - startY.current);
-      if (dy > 14 && dy > Math.abs(dx) * 1.35) {
+      if (dy > 18 && dy > Math.abs(dx) * 1.6) {
         resetDrag();
         return;
       }
-      if (dx < 5 || dx < dy * 0.55) return;
+      if (dx < 4 || dx < dy * 0.35) return;
       dragActive.current = true;
       ref.current?.setPointerCapture?.(e.pointerId);
       setDragging(true);
