@@ -1,11 +1,11 @@
-// Loguj Service Worker V3.5
+// Loguj Service Worker V3.6
 // Strategy:
 //   - GET requests for app shell (HTML/CSS/JS/icons): cache-first with network fallback
 //   - API requests (/api/*): network-only (no caching)
 //   - Other requests: network-first with cache fallback (offline support)
 
-const CACHE_NAME = "quicklog-v3-5";
-const APP_VERSION = "V3.5";
+const CACHE_NAME = "quicklog-v3-6";
+const APP_VERSION = "V3.6";
 const CORE_SHELL = [
   "/",
   "/index.html",

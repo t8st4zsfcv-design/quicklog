@@ -26,7 +26,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.5';
+const APP_VERSION = 'V3.6';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
