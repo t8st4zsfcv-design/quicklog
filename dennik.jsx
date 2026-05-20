@@ -26,7 +26,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.3';
+const APP_VERSION = 'V3.4';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -450,6 +450,7 @@ function Timeline({ events }) {
 // ====== Step drag card (S/M/L) ======
 function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWidth = false }) {
   const [dragging, setDragging] = useState(false);
+  const [dragArmed, setDragArmed] = useState(false);
   const [sizeIdx, setSizeIdx] = useState(0);
   const startPoint = useRef(null);
   const startX = useRef(null);
@@ -462,7 +463,14 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
+  const dragZoneRatio = 0.38;
   const isVertical = direction === 'vertical' && !fullWidth;
+
+  const isInDragZone = (clientX) => {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return true;
+    return clientX <= rect.left + (rect.width * dragZoneRatio);
+  };
 
   const computeIdx = (p) => {
     const idx = Math.floor(Math.min(0.999, Math.max(0, p)) * sizes.length);
@@ -478,6 +486,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     pointerIdRef.current = null;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
+    setDragArmed(false);
     setDragging(false);
     setSizeIdx(0);
   };
@@ -493,6 +502,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   };
 
   const beginVerticalTouch = (touch) => {
+    if (!isInDragZone(touch.clientX)) return;
     touchDragRef.current = true;
     startPoint.current = touch.clientY;
     startX.current = touch.clientX;
@@ -501,6 +511,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     pctRef.current = 0;
     sizeIdxRef.current = 0;
     dragActive.current = false;
+    setDragArmed(true);
     setSizeIdx(0);
   };
 
@@ -564,6 +575,10 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   const onPointerDown = (e) => {
     if (isVertical && touchDragRef.current) return;
     if (e.button !== undefined && e.button !== 0) return;
+    if (!isInDragZone(e.clientX)) {
+      resetDrag();
+      return;
+    }
     startPoint.current = isVertical ? e.clientY : e.clientX;
     startX.current = e.clientX;
     startY.current = e.clientY;
@@ -571,17 +586,27 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     spanRef.current = isVertical ? (ref.current?.offsetHeight || 160) : (ref.current?.offsetWidth || 200);
     pctRef.current = 0;
     sizeIdxRef.current = 0;
+    setDragArmed(true);
     if (!isVertical) {
-      e.preventDefault();
-      dragActive.current = true;
-      ref.current?.setPointerCapture?.(e.pointerId);
-      setDragging(true);
+      dragActive.current = false;
     }
     setSizeIdx(0);
   };
   const onPointerMove = (e) => {
     if (isVertical && touchDragRef.current) return;
     if (pointerIdRef.current !== e.pointerId) return;
+    if (!isVertical && !dragActive.current) {
+      const dx = e.clientX - startX.current;
+      const dy = Math.abs(e.clientY - startY.current);
+      if (dy > 14 && dy > Math.abs(dx) * 1.35) {
+        resetDrag();
+        return;
+      }
+      if (dx < 5 || dx < dy * 0.55) return;
+      dragActive.current = true;
+      ref.current?.setPointerCapture?.(e.pointerId);
+      setDragging(true);
+    }
     if (isVertical && !dragActive.current) {
       const dx = Math.abs(e.clientX - startX.current);
       const dy = startY.current - e.clientY;
@@ -619,7 +644,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   return (
     <div
       ref={ref}
-      className={`tcard drag steps-${sizes.length} ${isVertical ? 'vertical' : 'horizontal'} ${fullWidth ? 'full-width' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
+      className={`tcard drag steps-${sizes.length} ${isVertical ? 'vertical' : 'horizontal'} ${fullWidth ? 'full-width' : ''} ${dragArmed ? 'drag-armed' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
       data-size={currentSize || ''}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}

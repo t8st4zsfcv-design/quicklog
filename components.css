@@ -37,7 +37,7 @@
 
 .turbo-stack {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   padding: 0 18px;
 }
 
@@ -47,9 +47,9 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 14px 16px;
+  padding: 12px 15px;
   background: rgba(255,255,255,0.05);
-  border-radius: 14px;
+  border-radius: 12px;
   overflow: hidden;
   border: 0;
   text-align: left;
@@ -59,16 +59,26 @@
   cursor: pointer;
   user-select: none;
   -webkit-user-select: none;
-  touch-action: none;
-  min-height: 70px;
+  touch-action: pan-y;
+  min-height: 62px;
   transition: background 0.15s;
+  transform: none;
+}
+.tcard.drag,
+.tcard.drag *,
+.tcard.drag:active,
+.tcard.drag.drag-armed,
+.tcard.drag.dragging {
+  transform: none;
 }
 .tcard.drag.full-width {
-  min-height: 90px;
-  padding: 20px 22px;
-  gap: 16px;
+  min-height: 76px;
+  padding: 16px 20px;
+  gap: 14px;
+  touch-action: pan-y;
 }
-.tcard.drag:hover, .tcard.timer-card:hover, .tcard.action-card:hover { background: rgba(255,255,255,0.08); }
+.tcard.timer-card:hover, .tcard.action-card:hover { background: rgba(255,255,255,0.08); }
+.tcard.drag.drag-armed:hover { background: rgba(255,255,255,0.08); }
 .tcard.drag.dragging { background: rgba(255,255,255,0.06); }
 .tcard.drag.vertical {
   grid-template-columns: 1fr;
@@ -85,8 +95,8 @@
   align-items: end;
   flex: 0 0 92px;
   width: 92px;
-  min-height: 116px;
-  padding: 14px 10px;
+  min-height: 104px;
+  padding: 12px 10px;
   scroll-snap-align: start;
   touch-action: pan-x;
 }
@@ -195,9 +205,9 @@
   margin-top: 4px;
 }
 .tcard.drag.full-width .name {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  margin-top: 4px;
+  margin-top: 3px;
 }
 .tcard.drag.dragging .name { color: #16201f; }
 .tcard.drag.dragging .tcard-meta { color: rgba(22,32,31,0.6); }
