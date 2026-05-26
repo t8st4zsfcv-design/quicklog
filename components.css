@@ -40,6 +40,9 @@
   gap: 8px;
   padding: 0 18px;
 }
+.top-exercise-slot {
+  padding: 0 18px 12px;
+}
 
 .tcard.drag, .tcard.timer-card, .tcard.action-card {
   position: relative;
@@ -99,6 +102,24 @@
   padding: 12px 10px;
   scroll-snap-align: start;
   touch-action: pan-x;
+}
+.tcard.timer-card.featured-timer {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  width: 100%;
+  min-height: 76px;
+  padding: 16px 20px;
+  flex: initial;
+  touch-action: manipulation;
+}
+.tcard.timer-card.featured-timer .name {
+  font-size: 20px;
+  font-weight: 700;
+}
+.tcard.timer-card.featured-timer .tcard-right {
+  position: relative;
+  top: auto;
+  right: auto;
 }
 
 /* Horizontal fill — left to right */

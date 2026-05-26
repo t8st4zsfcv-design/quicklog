@@ -26,7 +26,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.6';
+const APP_VERSION = 'V3.7';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -677,11 +677,11 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   );
 }
 
-function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
+function TimerCard({ item, runningEvent, onStart, onStop, onLog, featured = false }) {
   const isRunning = runningEvent && runningEvent.sub === item.sub;
   return (
     <button
-      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${isRunning ? 'running' : ''}`}
+      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${featured ? 'featured-timer' : ''} ${isRunning ? 'running' : ''}`}
       onClick={() => {
         if (isRunning) return onStop(runningEvent.id);
         if (item.timer) return onStart(item);
@@ -746,7 +746,8 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
   const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const adrenalineItem = TURBO.find(t => t.sub === 'adrenaline');
-  const activityItems = TURBO.filter(t => t.cat === 'activity');
+  const exerciseItem = TURBO.find(t => t.sub === 'exercise');
+  const activityItems = TURBO.filter(t => t.cat === 'activity' && !['exercise', 'cannula'].includes(t.sub));
 
   const carbs = events
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
@@ -756,6 +757,17 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
   return (
     <div className="scroll">
       <Timeline events={events}/>
+
+      <div className="top-exercise-slot">
+        <TimerCard
+          item={exerciseItem}
+          runningEvent={runningEvent}
+          onStart={onStartTimer}
+          onStop={onStopTimer}
+          onLog={onLogSize}
+          featured
+        />
+      </div>
 
       <div className="stats">
         <div className="stat-big">{carbs}<span className="unit">g</span></div>
