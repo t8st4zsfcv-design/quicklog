@@ -66,13 +66,30 @@
   min-height: 62px;
   transition: background 0.15s;
   transform: none;
+  -webkit-transform: none;
+  scale: 1;
 }
+.tcard,
+.tcard *,
+.tcard:hover,
+.tcard:active,
+.tcard:focus,
 .tcard.drag,
 .tcard.drag *,
 .tcard.drag:active,
 .tcard.drag.drag-armed,
-.tcard.drag.dragging {
-  transform: none;
+.tcard.drag.dragging,
+.tcard.timer-card,
+.tcard.timer-card *,
+.tcard.timer-card:hover,
+.tcard.timer-card:active,
+.tcard.action-card,
+.tcard.action-card *,
+.tcard.action-card:hover,
+.tcard.action-card:active {
+  transform: none !important;
+  -webkit-transform: none !important;
+  scale: 1 !important;
 }
 .tcard.drag.full-width {
   min-height: 76px;
