@@ -40,8 +40,15 @@
   gap: 8px;
   padding: 0 18px;
 }
-.top-exercise-slot {
-  padding: 0 18px 12px;
+.primary-log-group,
+.secondary-log-group {
+  display: grid;
+  gap: 8px;
+}
+.secondary-log-group {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(247,244,237,0.08);
 }
 
 .tcard.drag, .tcard.timer-card, .tcard.action-card {

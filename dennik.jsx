@@ -740,11 +740,11 @@ function LiveTimer({ startTimestamp }) {
 }
 
 function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
-  const featuredFood = ['carbs', 'junk'];
   const featuredDrink = ['beer', 'spirits'];
 
-  const foodItems = featuredFood.map((s) => TURBO.find(t => t.sub === s));
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
+  const carbsItem = TURBO.find(t => t.sub === 'carbs');
+  const junkItem = TURBO.find(t => t.sub === 'junk');
   const adrenalineItem = TURBO.find(t => t.sub === 'adrenaline');
   const exerciseItem = TURBO.find(t => t.sub === 'exercise');
   const activityItems = TURBO.filter(t => t.cat === 'activity' && !['exercise', 'cannula'].includes(t.sub));
@@ -757,17 +757,6 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
   return (
     <div className="scroll">
       <Timeline events={events}/>
-
-      <div className="top-exercise-slot">
-        <TimerCard
-          item={exerciseItem}
-          runningEvent={runningEvent}
-          onStart={onStartTimer}
-          onStop={onStopTimer}
-          onLog={onLogSize}
-          featured
-        />
-      </div>
 
       <div className="stats">
         <div className="stat-big">{carbs}<span className="unit">g</span></div>
@@ -801,19 +790,33 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
       </div>
 
       <div className="turbo-stack">
-        {foodItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
+        <div className="primary-log-group">
+          <TimerCard
+            item={exerciseItem}
+            runningEvent={runningEvent}
+            onStart={onStartTimer}
+            onStop={onStopTimer}
+            onLog={onLogSize}
+            featured
+          />
 
-        <button className="camera-banner" onClick={onOpenCamera} disabled={cameraBusy}>
-          <div className="camera-banner-icon"><Icon.Cam/></div>
-          <div className="camera-banner-text">
-            <div className="camera-banner-title">Camera AI</div>
-            <div className="camera-banner-hint">odfotiť jedlo · AI odhad sacharidov</div>
-          </div>
-        </button>
+          <button className="camera-banner" onClick={onOpenCamera} disabled={cameraBusy}>
+            <div className="camera-banner-icon"><Icon.Cam/></div>
+            <div className="camera-banner-text">
+              <div className="camera-banner-title">Camera AI</div>
+              <div className="camera-banner-hint">odfotiť jedlo · AI odhad sacharidov</div>
+            </div>
+          </button>
 
-        {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
+          <DragCard key={junkItem.sub} item={junkItem} onLog={onLogSize} fullWidth/>
+        </div>
 
-        <MoodCard item={adrenalineItem} onLog={onLogSize} fullWidth/>
+        <div className="secondary-log-group">
+          <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize} fullWidth/>
+          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
+
+          <MoodCard item={adrenalineItem} onLog={onLogSize} fullWidth/>
+        </div>
       </div>
 
       <div className="section-title" style={{marginTop: 18}}>
