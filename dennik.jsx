@@ -11,8 +11,7 @@ const TURBO = [
   // mood
   { sub: 'adrenaline', cat: 'mood', label: 'Adrenalin' },
   { sub: 'sick',       cat: 'mood', label: 'Sick', toggle: true },
-  // activity (timer)
-  { sub: 'exercise', cat: 'activity', label: 'Exercise', timer: true },
+  // activity
   { sub: 'cannula',  cat: 'activity', label: 'Cannula' },
   { sub: 'meds',     cat: 'activity', label: 'Meds' },
 ];
@@ -25,8 +24,8 @@ const DRINK_SIZE_LABELS = {
   spirits: { S: '1 drink', M: '2 drinky', L: '3+ drinky' }
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
-const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada' };
-const APP_VERSION = 'V3.8';
+const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
+const APP_VERSION = 'V3.9';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -739,28 +738,56 @@ function LiveTimer({ startTimestamp }) {
   return <span>{String(m).padStart(2,'0')}:{String(s).padStart(2,'0')}</span>;
 }
 
-function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
+function DailyReview({ event, onSave }) {
+  const [draft, setDraft] = useState(event?.note || '');
+  useEffect(() => setDraft(event?.note || ''), [event?.id, event?.note]);
+  const saved = event?.note || '';
+  const changed = draft.trim() !== saved.trim();
+
+  return (
+    <div className="day-review-panel">
+      <div className="day-review-head">
+        <div>
+          <div className="day-review-kicker">Review dňa</div>
+          <div className="day-review-title">Kontext pre AI</div>
+        </div>
+        <button className="day-review-save" disabled={!changed} onClick={() => onSave(draft)}>
+          Uložiť
+        </button>
+      </div>
+      <textarea
+        value={draft}
+        onChange={(e) => setDraft(e.target.value)}
+        rows="3"
+        placeholder="Napr. celý deň behanie, nestíhal som logovať; zlý spánok; veľa stresu; jedlo odhadnuté narýchlo..."
+      />
+    </div>
+  );
+}
+
+function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onSaveDayReview, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
   const featuredDrink = ['beer', 'spirits'];
 
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const carbsItem = TURBO.find(t => t.sub === 'carbs');
   const junkItem = TURBO.find(t => t.sub === 'junk');
   const adrenalineItem = TURBO.find(t => t.sub === 'adrenaline');
-  const exerciseItem = TURBO.find(t => t.sub === 'exercise');
-  const activityItems = TURBO.filter(t => t.cat === 'activity' && !['exercise', 'cannula'].includes(t.sub));
+  const activityItems = TURBO.filter(t => t.cat === 'activity');
+  const logEvents = events.filter(e => e.cat !== 'review');
+  const reviewEvent = events.find(e => e.cat === 'review' && e.sub === 'day');
 
-  const carbs = events
+  const carbs = logEvents
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
     .reduce((s, e) => s + (e.carbs || 0), 0);
-  const activeToday = events.some(e => e.running) ? 1 : 0;
+  const activeToday = logEvents.some(e => e.running) ? 1 : 0;
 
   return (
     <div className="scroll">
-      <Timeline events={events}/>
+      <Timeline events={logEvents}/>
 
       <div className="stats">
         <div className="stat-big">{carbs}<span className="unit">g</span></div>
-        <div className="stat-mini"><b>{events.length}</b>EVENTOV</div>
+        <div className="stat-mini"><b>{logEvents.length}</b>EVENTOV</div>
         <div className="stat-mini"><b>{activeToday}</b>AKTÍV.</div>
         {runningSickEvent && (
           <div className="stat-mini stat-sick">
@@ -769,6 +796,8 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
           </div>
         )}
       </div>
+
+      <DailyReview event={reviewEvent} onSave={(note) => onSaveDayReview(selectedDateKey, note)} />
 
       {aiResult && (
         <div className="ai-result-hero-card">
@@ -791,15 +820,6 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
 
       <div className="turbo-stack">
         <div className="primary-log-group">
-          <TimerCard
-            item={exerciseItem}
-            runningEvent={runningEvent}
-            onStart={onStartTimer}
-            onStop={onStopTimer}
-            onLog={onLogSize}
-            featured
-          />
-
           <button className="camera-banner" onClick={onOpenCamera} disabled={cameraBusy}>
             <div className="camera-banner-icon"><Icon.Cam/></div>
             <div className="camera-banner-text">
@@ -820,8 +840,8 @@ function Home({ events, runningEvent, runningSickEvent, onLogSize, onStartTimer,
       </div>
 
       <div className="section-title" style={{marginTop: 18}}>
-        <h3>Timer</h3>
-        <small>ŤUKNI · ZAPNI / VYPNI</small>
+        <h3>Kontext</h3>
+        <small>ŤUKNI · DETAIL / ON-OFF</small>
       </div>
       <div className="turbo-grid timers">
         {activityItems.map((item) => (
@@ -901,7 +921,7 @@ function Records({ events, onAdjustTime, onSetTime, onAdjustDuration, onActivity
         <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
-        {['all','food','drink','activity','mood'].map((f) => (
+        {['all','food','drink','activity','mood','review'].map((f) => (
           <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
             {f === 'all' ? `Všetko · ${events.length}` : `${CAT_LABEL[f]} · ${events.filter(e=>e.cat===f).length}`}
           </button>
@@ -1095,6 +1115,40 @@ function App() {
     }));
     showToast(<>Detail uložený</>);
   };
+  const onSaveDayReview = (dateKey, note) => {
+    const text = String(note || '').trim();
+    const reviewTimestamp = timestampFromDateKeyAndHour(dateKey, 23 + (59 / 60));
+    const reviewClock = {
+      timestamp: reviewTimestamp,
+      timestampLocal: formatLocalTimestamp(new Date(reviewTimestamp)),
+      dateKey,
+      time: '23:59',
+      hour: 23 + (59 / 60)
+    };
+
+    setEvents(es => {
+      const existing = es.find(e => e.dateKey === dateKey && e.cat === 'review' && e.sub === 'day');
+      if (!text) return existing ? es.filter(e => e.id !== existing.id) : es;
+      if (existing) {
+        return es.map(e => e.id === existing.id ? { ...e, ...reviewClock, note: text, label: 'Review dňa', source: e.source || 'manual' } : e);
+      }
+      const id = Math.max(...es.map(e => e.id), 0) + 1;
+      return [
+        ...es,
+        {
+          id,
+          ...reviewClock,
+          createdAt: Date.now(),
+          cat: 'review',
+          sub: 'day',
+          label: 'Review dňa',
+          note: text,
+          source: 'manual'
+        }
+      ];
+    });
+    showToast(text ? <>Review dňa uložené</> : <>Review dňa zmazané</>);
+  };
   const onDelete = (id) => {
     const evt = events.find(e => e.id === id);
     if (!evt) return;
@@ -1185,6 +1239,7 @@ function App() {
         {view === 'home' && (
           <Home
             events={selectedEvents}
+            selectedDateKey={selectedDateKey}
             runningEvent={runningEvent}
             runningSickEvent={runningSickEvent}
             onLogSize={onLogSize}
@@ -1192,6 +1247,7 @@ function App() {
             onStopTimer={onStopTimer}
             onStartSick={onStartSick}
             onStopSick={onStopSick}
+            onSaveDayReview={onSaveDayReview}
             onRefresh={refreshApp}
             onOpenCamera={openCamera}
             cameraBusy={cameraBusy}
