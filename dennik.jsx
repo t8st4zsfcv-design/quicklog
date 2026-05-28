@@ -25,7 +25,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.9';
+const APP_VERSION = 'V3.11';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -131,6 +131,14 @@ function formatHour(hour) {
   return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
+function hourFromTimeValue(timeValue) {
+  const match = String(timeValue || '').match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const h = Math.max(0, Math.min(23, Number(match[1])));
+  const m = Math.max(0, Math.min(59, Number(match[2])));
+  return h + (m / 60);
+}
+
 function eventSortValue(event) {
   if (Number.isFinite(event?.timestamp)) return event.timestamp;
   if (Number.isFinite(event?.createdAt)) return event.createdAt;
@@ -231,6 +239,9 @@ function migrateEvent(event) {
     size,
     intensity,
     note,
+    mealStartTime: event?.mealStartTime,
+    mealStartTimestamp: event?.mealStartTimestamp,
+    mealStartHour: event?.mealStartHour,
     carbs: cat === 'mood' ? undefined : canonicalCarbs ?? event?.carbs,
     timestamp,
     timestampLocal: event?.timestampLocal || formatLocalTimestamp(timestampDate),
@@ -244,7 +255,7 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'activityDetail', 'source'];
+  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'meal_start_time', 'meal_start_timestamp', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'activityDetail', 'source'];
   const rows = events
     .slice()
     .sort((a, b) => eventSortValue(b) - eventSortValue(a))
@@ -264,6 +275,8 @@ function eventsToCsv(events) {
         date.day,
         event.time,
         formatHour(startHour),
+        event.mealStartTime || '',
+        event.mealStartTimestamp ? formatLocalTimestamp(new Date(event.mealStartTimestamp)) : '',
         endTimestamp === '' ? '' : formatHour(new Date(endTimestamp).getHours() + (new Date(endTimestamp).getMinutes() / 60)),
         date.iso,
         endDate?.iso || '',
@@ -447,7 +460,7 @@ function Timeline({ events }) {
 }
 
 // ====== Step drag card (S/M/L) ======
-function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWidth = false }) {
+function DragCard({ item, onLog, sizes = SIZES }) {
   const [dragging, setDragging] = useState(false);
   const [dragArmed, setDragArmed] = useState(false);
   const [sizeIdx, setSizeIdx] = useState(0);
@@ -458,12 +471,10 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   const pctRef = useRef(0);
   const sizeIdxRef = useRef(0);
   const pointerIdRef = useRef(null);
-  const touchDragRef = useRef(false);
   const spanRef = useRef(200);
   const ref = useRef(null);
   const minCommitPct = 0.16;
   const dragZoneRatio = 0.5;
-  const isVertical = direction === 'vertical' && !fullWidth;
 
   const isInDragZone = (clientX) => {
     const rect = ref.current?.getBoundingClientRect();
@@ -481,7 +492,6 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     startX.current = null;
     startY.current = null;
     dragActive.current = false;
-    touchDragRef.current = false;
     pointerIdRef.current = null;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
@@ -492,7 +502,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
 
   const updateDrag = (event) => {
     if (startPoint.current == null) return;
-    const delta = isVertical ? startPoint.current - event.clientY : event.clientX - startPoint.current;
+    const delta = event.clientX - startPoint.current;
     const p = Math.min(1, Math.max(0, delta / spanRef.current));
     const idx = computeIdx(p);
     pctRef.current = p;
@@ -500,101 +510,26 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
     setSizeIdx((currentIdx) => currentIdx === idx ? currentIdx : idx);
   };
 
-  const beginVerticalTouch = (touch) => {
-    if (!isInDragZone(touch.clientX)) return;
-    touchDragRef.current = true;
-    startPoint.current = touch.clientY;
-    startX.current = touch.clientX;
-    startY.current = touch.clientY;
-    spanRef.current = ref.current?.offsetHeight || 160;
-    pctRef.current = 0;
-    sizeIdxRef.current = 0;
-    dragActive.current = false;
-    setDragArmed(true);
-    setSizeIdx(0);
-  };
-
-  const moveVerticalTouch = (touch, originalEvent) => {
-    if (!touchDragRef.current) return;
-    if (!dragActive.current) {
-      const dx = Math.abs(touch.clientX - startX.current);
-      const dy = startY.current - touch.clientY;
-      if (dx > 6 && dx > Math.abs(dy)) return;
-      if (dy < 8) return;
-      dragActive.current = true;
-      setDragging(true);
-    }
-    originalEvent.preventDefault();
-    updateDrag(touch);
-  };
-
-  const endVerticalTouch = (touch, originalEvent) => {
-    if (!touchDragRef.current) return;
-    if (!dragActive.current || !touch) {
-      resetDrag();
-      return;
-    }
-    originalEvent.preventDefault();
-    updateDrag(touch);
-    if (pctRef.current >= minCommitPct) {
-      onLog({ ...item, size: sizes[sizeIdxRef.current] });
-    }
-    resetDrag();
-  };
-
-  useEffect(() => {
-    if (!isVertical || !ref.current) return undefined;
-    const node = ref.current;
-    const handleTouchStart = (event) => {
-      if (event.touches.length !== 1) return;
-      beginVerticalTouch(event.touches[0]);
-    };
-    const handleTouchMove = (event) => {
-      if (event.touches.length !== 1) return;
-      moveVerticalTouch(event.touches[0], event);
-    };
-    const handleTouchEnd = (event) => {
-      endVerticalTouch(event.changedTouches[0], event);
-    };
-    const handleTouchCancel = () => {
-      if (touchDragRef.current) resetDrag();
-    };
-    node.addEventListener('touchstart', handleTouchStart, { passive: true });
-    node.addEventListener('touchmove', handleTouchMove, { passive: false });
-    node.addEventListener('touchend', handleTouchEnd, { passive: false });
-    node.addEventListener('touchcancel', handleTouchCancel, { passive: true });
-    return () => {
-      node.removeEventListener('touchstart', handleTouchStart);
-      node.removeEventListener('touchmove', handleTouchMove);
-      node.removeEventListener('touchend', handleTouchEnd);
-      node.removeEventListener('touchcancel', handleTouchCancel);
-    };
-  }, [isVertical, item, onLog]);
-
   const onPointerDown = (e) => {
-    if (isVertical && touchDragRef.current) return;
     if (e.button !== undefined && e.button !== 0) return;
     if (!isInDragZone(e.clientX)) {
       resetDrag();
       return;
     }
-    startPoint.current = isVertical ? e.clientY : e.clientX;
+    startPoint.current = e.clientX;
     startX.current = e.clientX;
     startY.current = e.clientY;
     pointerIdRef.current = e.pointerId;
-    spanRef.current = isVertical ? (ref.current?.offsetHeight || 160) : (ref.current?.offsetWidth || 200);
+    spanRef.current = ref.current?.offsetWidth || 200;
     pctRef.current = 0;
     sizeIdxRef.current = 0;
     setDragArmed(true);
-    if (!isVertical) {
-      dragActive.current = false;
-    }
+    dragActive.current = false;
     setSizeIdx(0);
   };
   const onPointerMove = (e) => {
-    if (isVertical && touchDragRef.current) return;
     if (pointerIdRef.current !== e.pointerId) return;
-    if (!isVertical && !dragActive.current) {
+    if (!dragActive.current) {
       const dx = e.clientX - startX.current;
       const dy = Math.abs(e.clientY - startY.current);
       if (dy > 18 && dy > Math.abs(dx) * 1.6) {
@@ -606,20 +541,10 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
       ref.current?.setPointerCapture?.(e.pointerId);
       setDragging(true);
     }
-    if (isVertical && !dragActive.current) {
-      const dx = Math.abs(e.clientX - startX.current);
-      const dy = startY.current - e.clientY;
-      if (dx > 6 && dx > Math.abs(dy)) return;
-      if (dy < 8) return;
-      dragActive.current = true;
-      ref.current?.setPointerCapture?.(e.pointerId);
-      setDragging(true);
-    }
     e.preventDefault();
     updateDrag(e);
   };
   const onPointerUp = (e) => {
-    if (isVertical && touchDragRef.current) return;
     if (pointerIdRef.current !== e.pointerId) return;
     if (!dragActive.current) {
       resetDrag();
@@ -643,7 +568,7 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   return (
     <div
       ref={ref}
-      className={`tcard drag steps-${sizes.length} ${isVertical ? 'vertical' : 'horizontal'} ${fullWidth ? 'full-width' : ''} ${dragArmed ? 'drag-armed' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
+      className={`tcard drag steps-${sizes.length} full-width ${dragArmed ? 'drag-armed' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
       data-size={currentSize || ''}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
@@ -676,11 +601,11 @@ function DragCard({ item, onLog, direction = 'horizontal', sizes = SIZES, fullWi
   );
 }
 
-function TimerCard({ item, runningEvent, onStart, onStop, onLog, featured = false }) {
+function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   const isRunning = runningEvent && runningEvent.sub === item.sub;
   return (
     <button
-      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${featured ? 'featured-timer' : ''} ${isRunning ? 'running' : ''}`}
+      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${isRunning ? 'running' : ''}`}
       onClick={() => {
         if (isRunning) return onStop(runningEvent.id);
         if (item.timer) return onStart(item);
@@ -708,8 +633,8 @@ function TimerCard({ item, runningEvent, onStart, onStop, onLog, featured = fals
   );
 }
 
-function MoodCard({ item, onLog, fullWidth = false }) {
-  return <DragCard item={item} onLog={onLog} sizes={ADRENALINE_LEVELS} fullWidth={fullWidth} />;
+function MoodCard({ item, onLog }) {
+  return <DragCard item={item} onLog={onLog} sizes={ADRENALINE_LEVELS} />;
 }
 
 function CameraCard({ onOpenCamera, disabled }) {
@@ -828,14 +753,14 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
             </div>
           </button>
 
-          <DragCard key={junkItem.sub} item={junkItem} onLog={onLogSize} fullWidth/>
+          <DragCard key={junkItem.sub} item={junkItem} onLog={onLogSize}/>
         </div>
 
         <div className="secondary-log-group">
-          <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize} fullWidth/>
-          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize} fullWidth/>)}
+          <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize}/>
+          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
 
-          <MoodCard item={adrenalineItem} onLog={onLogSize} fullWidth/>
+          <MoodCard item={adrenalineItem} onLog={onLogSize}/>
         </div>
       </div>
 
@@ -882,6 +807,24 @@ function TimeAdjuster({ event, step, onAdjustTime, onSetTime }) {
   );
 }
 
+function MealStartAdjuster({ event, onAdjustMealStartTime, onSetMealStartTime }) {
+  const mealTime = event.mealStartTime || event.time || '00:00';
+  const status = event.mealStartTime ? 'nastavené' : 'default = čas fotky';
+  return (
+    <div>
+      <div className="lbl" style={{marginBottom: 8}}>Začal som jesť · {status}</div>
+      <div className="time-adjust meal-start-adjust">
+        <button className="tbtn" onClick={() => onAdjustMealStartTime(event.id, -5)}>−5 min</button>
+        <label className="now-time native-time-trigger" aria-label={`Upraviť začiatok jedla ${mealTime}`}>
+          <span>{mealTime}</span>
+          <input type="time" value={mealTime} onChange={(e) => onSetMealStartTime(event.id, e.target.value)} />
+        </label>
+        <button className="tbtn" onClick={() => onAdjustMealStartTime(event.id, +5)}>+5 min</button>
+      </div>
+    </div>
+  );
+}
+
 function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel, onDelete }) {
   const [draft, setDraft] = useState(event.activityDetail || '');
   const isMeds = event.sub === 'meds';
@@ -908,7 +851,7 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel
   );
 }
 
-function Records({ events, onAdjustTime, onSetTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
@@ -941,7 +884,7 @@ function Records({ events, onAdjustTime, onSetTime, onAdjustDuration, onActivity
               <span className={`cat-dot rec-row-dot dot-${e.cat}`} />
               <div>
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
-                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
+                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.mealStartTime ? ` · jedlo ${e.mealStartTime}` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
               </div>
               {e.size && <span className="rec-size">{e.size}</span>}
               {e.running && <span className="rec-size run">RUN</span>}
@@ -963,6 +906,13 @@ function Records({ events, onAdjustTime, onSetTime, onAdjustDuration, onActivity
                   <span className="val">{e.label}{e.size ? ` · ${e.size}` : ''}{e.carbs ? ` · ${e.carbs}g` : ''}</span>
                 </div>
                 <TimeAdjuster event={e} step={timeStep} onAdjustTime={onAdjustTime} onSetTime={onSetTime} />
+                {e.cat === 'food' && (
+                  <MealStartAdjuster
+                    event={e}
+                    onAdjustMealStartTime={onAdjustMealStartTime}
+                    onSetMealStartTime={onSetMealStartTime}
+                  />
+                )}
                 {hasDuration && !e.running && (
                   <div>
                     <div className="lbl" style={{marginBottom: 8}}>Dĺžka záznamu</div>
@@ -1090,16 +1040,37 @@ function App() {
     }));
   };
   const onSetTime = (id, timeValue) => {
-    const match = String(timeValue || '').match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return;
-    const h = Math.max(0, Math.min(23, Number(match[1])));
-    const m = Math.max(0, Math.min(59, Number(match[2])));
-    const newHour = h + (m / 60);
+    const newHour = hourFromTimeValue(timeValue);
+    if (newHour == null) return;
     setEvents(es => es.map(e => {
       if (e.id !== id) return e;
       const timestamp = timestampFromDateKeyAndHour(e.dateKey, newHour);
       return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
     }));
+  };
+  const setMealStartForEvent = (event, mealStartHour) => {
+    const timestamp = timestampFromDateKeyAndHour(event.dateKey, mealStartHour);
+    return {
+      ...event,
+      mealStartHour,
+      mealStartTime: formatHour(mealStartHour),
+      mealStartTimestamp: timestamp
+    };
+  };
+  const onSetMealStartTime = (id, timeValue) => {
+    const mealStartHour = hourFromTimeValue(timeValue);
+    if (mealStartHour == null) return;
+    setEvents(es => es.map(e => e.id === id && e.cat === 'food' ? setMealStartForEvent(e, mealStartHour) : e));
+    showToast(<>Začiatok jedla uložený</>);
+  };
+  const onAdjustMealStartTime = (id, deltaMin) => {
+    setEvents(es => es.map(e => {
+      if (e.id !== id || e.cat !== 'food') return e;
+      const baseHour = Number.isFinite(e.mealStartHour) ? e.mealStartHour : (Number.isFinite(e.hour) ? e.hour : hourFromTimeValue(e.time) || 0);
+      const mealStartHour = Math.max(0, Math.min(23.99, baseHour + (deltaMin / 60)));
+      return setMealStartForEvent(e, mealStartHour);
+    }));
+    showToast(<>Začiatok jedla posunutý</>);
   };
   const onAdjustDuration = (id, deltaMin) => {
     setEvents(es => es.map(e => {
@@ -1255,7 +1226,7 @@ function App() {
             onDismissAiResult={() => setAiResult(null)}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
