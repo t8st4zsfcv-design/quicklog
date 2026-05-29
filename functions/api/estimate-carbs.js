@@ -1,4 +1,4 @@
-const DEFAULT_MODEL = "gpt-4o-mini";
+const DEFAULT_MODEL = "gpt-5.4-mini";
 const OPENAI_TIMEOUT_MS = 45000;
 const MAX_BODY_BYTES = 5_000_000;
 
@@ -50,6 +50,7 @@ export async function onRequestPost({ request, env }) {
                   "Return only JSON matching the schema.",
                   "Return total carbohydrate grams only; do not use carbohydrate exchange units.",
                   "QuickLog V3 counts carbs for food and beer only; spirits, water and plain coffee should usually be 0 unless visible sugar is present.",
+                  "The user will usually place the same large soup spoon next to the food. When a spoon is visible, use it as a stable scale reference for portion size.",
                   "short_note must be one natural English sentence in first person, naming the likely food, e.g. \"It looks like rice pudding.\"",
                   "If unsure, use confidence low and a conservative middle estimate.",
                   "Do not give medical advice."

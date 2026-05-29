@@ -25,7 +25,9 @@
 ## Phase 2 deploy
 Camera AI code is present in `functions/api/estimate-carbs.js`.
 
-Before testing on iPhone, set `OPENAI_API_KEY` as an encrypted environment variable in the Cloudflare dashboard. Optional: set `OPENAI_MODEL`, otherwise the function uses `gpt-4o-mini`.
+Before testing on iPhone, set `OPENAI_API_KEY` as an encrypted environment variable in the Cloudflare dashboard. Optional: set `OPENAI_MODEL`, otherwise the function uses `gpt-5.4-mini`.
+
+For Camera AI carb estimates, place the same large soup spoon next to the food when possible. The prompt treats it as a stable scale reference for portion size while still returning only `grams`, `confidence`, and `short_note`.
 
 Do not use Pages Direct Upload for this phase; Cloudflare Pages Functions need Git integration or Wrangler deploy.
 
