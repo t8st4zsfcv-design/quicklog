@@ -1,16 +1,16 @@
 :root {
-  --bg: #1e251f;
-  --panel: #1e251f;
-  --panel-soft: #333d32;
-  --ink: #f1ede2;
-  --muted: rgba(241, 237, 226, 0.58);
-  --paper: #f1ede2;
-  --peach: #e6c39b;
-  --peach-2: #d4ad80;
-  --drink: #b6d96a;
-  --drink-soft: rgba(182, 217, 106, 0.16);
-  --red: #ff5544;
-  --green: #91b55f;
+  --bg: #dff7ef;
+  --panel: #dff7ef;
+  --panel-soft: #11b197;
+  --ink: #087765;
+  --muted: rgba(8, 119, 101, 0.58);
+  --paper: #fbfffb;
+  --peach: #ffbd8a;
+  --peach-2: #ffab72;
+  --drink: #cce96c;
+  --drink-soft: rgba(17, 177, 151, 0.12);
+  --red: #ff6548;
+  --green: #12b095;
   --display: "Space Grotesk", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -47,7 +47,7 @@ button {
   overflow: hidden;
   border-radius: 0;
   background: var(--panel);
-  box-shadow: 0 24px 70px rgba(18, 30, 28, 0.28);
+  box-shadow: 0 24px 70px rgba(8, 119, 101, 0.18);
 }
 
 .screen {
@@ -81,7 +81,7 @@ button {
   height: 34px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.64);
   color: var(--ink);
 }
 
@@ -127,14 +127,14 @@ button {
   margin: 0 18px 18px;
   border-radius: 24px;
   background: var(--paper);
-  color: #333d32;
+  color: #087765;
   overflow: hidden;
 }
 
 .timeline-grid {
   position: absolute;
   inset: 16px 18px 26px;
-  background: repeating-linear-gradient(90deg, rgba(64, 89, 86, 0.1) 0 1px, transparent 1px 16.66%);
+  background: repeating-linear-gradient(90deg, rgba(8, 119, 101, 0.1) 0 1px, transparent 1px 16.66%);
 }
 
 .timeline-events {
@@ -154,7 +154,7 @@ button {
 .ev.drink { background: var(--drink); }
 .ev.activity { background: var(--green); }
 .ev.mood { background: var(--red); }
-.ev.sleep { background: rgba(247, 244, 237, 0.7); }
+.ev.sleep { background: rgba(8, 119, 101, 0.7); }
 
 .timeline-axis {
   position: absolute;
@@ -165,7 +165,7 @@ button {
   justify-content: space-between;
   font-family: var(--mono);
   font-size: 9px;
-  color: rgba(64, 89, 86, 0.48);
+  color: rgba(8, 119, 101, 0.48);
 }
 
 .stats {
@@ -178,7 +178,7 @@ button {
   padding: 18px 22px;
   border-radius: 24px;
   background: var(--peach);
-  color: #333d32;
+  color: #087765;
 }
 
 .sick-banner {
@@ -187,8 +187,8 @@ button {
   top: 10px;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgba(255, 68, 47, 0.14);
-  color: #333d32;
+  background: rgba(255, 101, 72, 0.14);
+  color: #087765;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
@@ -223,7 +223,7 @@ button {
 }
 
 .stat-sick {
-  background: rgba(255, 68, 47, 0.16);
+  background: rgba(255, 101, 72, 0.16);
   border-radius: 10px;
   padding: 6px 8px;
 }
@@ -277,7 +277,7 @@ button {
   place-items: center;
   background: var(--red);
   color: white;
-  box-shadow: 0 14px 30px rgba(255, 68, 47, 0.28);
+  box-shadow: 0 14px 30px rgba(255, 101, 72, 0.28);
 }
 
 .fab-cam svg {
@@ -296,8 +296,8 @@ button {
   padding: 0 9px;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(247, 244, 237, 0.46);
+  background: rgba(255, 255, 255, 0.5);
+  color: rgba(8, 119, 101, 0.52);
   font-family: var(--mono);
   font-size: 9px;
   font-weight: 700;
@@ -317,7 +317,7 @@ button {
   margin: 0 auto;
   padding: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.58);
   backdrop-filter: blur(16px);
 }
 
@@ -326,14 +326,14 @@ button {
   border-radius: 999px;
   padding: 10px 14px;
   background: transparent;
-  color: rgba(247, 244, 237, 0.62);
+  color: rgba(8, 119, 101, 0.62);
   font-weight: 700;
   font-size: 12px;
 }
 
 .nav-pill button.on {
   background: var(--paper);
-  color: #333d32;
+  color: #087765;
 }
 
 .rec-head {
@@ -347,7 +347,7 @@ button {
 .fchip {
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--ink);
   padding: 9px 12px;
   font-size: 11px;
@@ -370,7 +370,7 @@ button {
 
 .fchip.on {
   background: var(--peach);
-  color: #333d32;
+  color: #087765;
 }
 
 .rec-rail {
@@ -386,7 +386,7 @@ button {
   gap: 12px;
   padding: 13px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.56);
 }
 
 .rec-time,
@@ -403,7 +403,7 @@ button {
 }
 
 .rec-size {
-  color: #333d32;
+  color: #087765;
   background: var(--peach);
   border-radius: 999px;
   padding: 5px 7px;
@@ -428,7 +428,7 @@ button {
   padding: 12px 14px;
   border-radius: 18px;
   background: var(--paper);
-  color: #333d32;
+  color: #087765;
   box-shadow: 0 18px 40px rgba(18, 30, 28, 0.22);
 }
 
@@ -447,7 +447,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: var(--peach);
-  color: #333d32;
+  color: #087765;
   padding: 8px 10px;
   font-weight: 800;
 }
@@ -467,7 +467,7 @@ button {
   width: 132px;
   height: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.46);
+  background: rgba(8, 119, 101, 0.28);
   transform: translateX(-50%);
 }
 
