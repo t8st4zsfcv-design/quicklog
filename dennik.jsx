@@ -25,7 +25,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.11';
+const APP_VERSION = 'V3.12';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -690,7 +690,7 @@ function DailyReview({ event, onSave }) {
   );
 }
 
-function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onSaveDayReview, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
+function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
   const featuredDrink = ['beer', 'spirits'];
 
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
@@ -699,7 +699,6 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
   const adrenalineItem = TURBO.find(t => t.sub === 'adrenaline');
   const activityItems = TURBO.filter(t => t.cat === 'activity');
   const logEvents = events.filter(e => e.cat !== 'review');
-  const reviewEvent = events.find(e => e.cat === 'review' && e.sub === 'day');
 
   const carbs = logEvents
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
@@ -721,8 +720,6 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
           </div>
         )}
       </div>
-
-      <DailyReview event={reviewEvent} onSave={(note) => onSaveDayReview(selectedDateKey, note)} />
 
       {aiResult && (
         <div className="ai-result-hero-card">
@@ -851,10 +848,11 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel
   );
 }
 
-function Records({ events, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, selectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
-  const visible = filter === 'all' ? events : events.filter(e => e.cat === filter);
+  const recordEvents = events.filter(e => e.cat !== 'review');
+  const visible = filter === 'all' ? recordEvents : recordEvents.filter(e => e.cat === filter);
   const sorted = [...visible].sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0));
 
   return (
@@ -864,9 +862,9 @@ function Records({ events, onAdjustTime, onSetTime, onAdjustMealStartTime, onSet
         <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
-        {['all','food','drink','activity','mood','review'].map((f) => (
+        {['all','food','drink','activity','mood'].map((f) => (
           <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'all' ? `Všetko · ${events.length}` : `${CAT_LABEL[f]} · ${events.filter(e=>e.cat===f).length}`}
+            {f === 'all' ? `Všetko · ${recordEvents.length}` : `${CAT_LABEL[f]} · ${recordEvents.filter(e=>e.cat===f).length}`}
           </button>
         ))}
       </div>
@@ -933,6 +931,9 @@ function Records({ events, onAdjustTime, onSetTime, onAdjustMealStartTime, onSet
           );
         })}
       </div>
+      <div className="records-review-slot">
+        <DailyReview event={reviewEvent} onSave={(note) => onSaveDayReview(selectedDateKey, note)} />
+      </div>
       <div style={{height: 24}}/>
     </div>
   );
@@ -959,6 +960,7 @@ function App() {
   const runningEvent = events.find(e => e.running && e.cat === 'activity');
   const runningSickEvent = events.find(e => e.running && e.cat === 'mood' && e.sub === 'sick');
   const selectedEvents = events.filter(e => e.dateKey === selectedDateKey && e.cat !== 'sleep');
+  const selectedReviewEvent = selectedEvents.find(e => e.cat === 'review' && e.sub === 'day');
 
   useEffect(() => {
     try {
@@ -1218,7 +1220,6 @@ function App() {
             onStopTimer={onStopTimer}
             onStartSick={onStartSick}
             onStopSick={onStopSick}
-            onSaveDayReview={onSaveDayReview}
             onRefresh={refreshApp}
             onOpenCamera={openCamera}
             cameraBusy={cameraBusy}
@@ -1226,7 +1227,7 @@ function App() {
             onDismissAiResult={() => setAiResult(null)}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
