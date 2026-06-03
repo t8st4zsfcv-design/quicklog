@@ -44,7 +44,7 @@
   align-items: center;
   gap: 12px;
   padding: 12px 15px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.86);
   border-radius: 12px;
   overflow: hidden;
   border: 0;
@@ -91,9 +91,9 @@
   gap: 14px;
   touch-action: pan-y;
 }
-.tcard.timer-card:hover, .tcard.action-card:hover { background: rgba(255, 255, 255, 0.75); }
-.tcard.drag.drag-armed:hover { background: rgba(255, 255, 255, 0.75); }
-.tcard.drag.dragging { background: rgba(255, 255, 255, 0.7); }
+.tcard.timer-card:hover, .tcard.action-card:hover { background: rgba(255, 255, 255, 0.96); }
+.tcard.drag.drag-armed:hover { background: rgba(255, 255, 255, 0.96); }
+.tcard.drag.dragging { background: rgba(255, 255, 255, 0.94); }
 .tcard.timer-card {
   grid-template-columns: 1fr;
   align-items: end;
@@ -175,7 +175,7 @@
 .cat-dot.dot-drink { background: var(--drink); }
 .cat-dot.dot-activity { background: var(--green); }
 .cat-dot.dot-mood { background: var(--red); }
-.cat-dot.dot-sleep { background: rgba(8, 119, 101, 0.7); }
+.cat-dot.dot-sleep { background: rgba(6, 79, 69, 0.78); }
 .cat-dot.dot-review { background: var(--green); }
 
 .tcard.drag .name, .tcard.timer-card .name, .tcard.action-card .name {
@@ -191,7 +191,7 @@
   margin-top: 3px;
 }
 .tcard.drag.dragging .name { color: var(--ink); }
-.tcard.drag.dragging .tcard-meta { color: rgba(8, 119, 101, 0.72); }
+.tcard.drag.dragging .tcard-meta { color: rgba(6, 79, 69, 0.78); }
 .tcard.timer-card .name {
   font-size: 14px;
   line-height: 1.05;
@@ -227,7 +227,7 @@
   padding: 20px 22px;
   border: 2px dashed rgba(255, 101, 72, 0.44);
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.48);
+  background: rgba(255, 255, 255, 0.82);
   color: var(--ink);
   font-family: inherit;
   text-align: left;
@@ -237,7 +237,7 @@
 }
 .camera-banner:hover {
   border-color: rgba(255, 101, 72, 0.5);
-  background: rgba(255, 255, 255, 0.66);
+  background: rgba(255, 255, 255, 0.92);
 }
 .camera-banner:disabled {
   opacity: 0.5;
@@ -281,7 +281,7 @@
   margin: 0 18px 24px;
   padding: 28px 24px;
   border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.74) 0%, rgba(204, 233, 108, 0.2) 100%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94) 0%, rgba(204, 233, 108, 0.2) 100%);
   box-shadow: inset 0 0 0 1px rgba(8, 119, 101, 0.08), 0 8px 24px rgba(8, 119, 101, 0.12);
   display: grid;
   gap: 12px;
@@ -326,7 +326,7 @@
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: 0.12em;
-  color: rgba(8, 119, 101, 0.62);
+  color: rgba(6, 79, 69, 0.72);
   text-transform: uppercase;
 }
 .ai-hero-badge {
@@ -355,8 +355,8 @@
   height: 32px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
-  color: rgba(8, 119, 101, 0.7);
+  background: rgba(255, 255, 255, 0.94);
+  color: rgba(6, 79, 69, 0.78);
   font-size: 16px;
   display: grid;
   place-items: center;
@@ -424,7 +424,7 @@
   font-family: var(--mono);
   font-size: 8.5px;
   letter-spacing: 0.08em;
-  color: rgba(8, 119, 101, 0.72);
+  color: rgba(6, 79, 69, 0.78);
   text-transform: uppercase;
   margin-top: 4px;
   white-space: nowrap;
@@ -438,7 +438,7 @@
 /* timer */
 .tcard.timer-card.running {
   background: linear-gradient(135deg, var(--peach) 0%, var(--peach-2) 100%);
-  color: #087765;
+  color: #064f45;
   box-shadow: inset 0 0 0 1px rgba(255, 189, 138, 0.8), 0 10px 24px rgba(8, 119, 101, 0.14);
 }
 .tcard.action-card.running {
@@ -453,7 +453,7 @@
   color: rgba(22,32,31,0.68);
 }
 .tcard.timer-card.running .rec-dot {
-  background: #087765;
+  background: #064f45;
 }
 .timer-pop {
   display: grid;
@@ -476,7 +476,7 @@
   background: rgba(255, 255, 255, 0.52);
   display: grid; place-items: center;
   font-size: 11px;
-  color: rgba(8, 119, 101, 0.65);
+  color: rgba(6, 79, 69, 0.74);
 }
 .tcard.timer-card.running .play-btn { display: none; }
 .tcard.timer-card.sub-cannula {
@@ -503,7 +503,7 @@
   margin: -12px 18px 24px;
   padding: 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.54);
+  background: rgba(255, 255, 255, 0.84);
   box-shadow: inset 0 0 0 1px rgba(8, 119, 101, 0.08);
 }
 .day-review-head {
@@ -532,7 +532,7 @@
   border-radius: 999px;
   padding: 9px 12px;
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
   font-size: 11px;
   font-weight: 800;
 }
@@ -546,7 +546,7 @@
   border: 0;
   border-radius: 12px;
   padding: 12px 13px;
-  background: rgba(255, 255, 255, 0.68);
+  background: rgba(255, 255, 255, 0.94);
   box-shadow: inset 0 0 0 1px rgba(8, 119, 101, 0.12);
   color: var(--ink);
   font: inherit;
@@ -574,7 +574,7 @@
 .rec-detail {
   margin: 0 0 6px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.86);
   border-radius: 14px;
   border: 1px solid rgba(8, 119, 101, 0.1);
   display: grid;
@@ -590,14 +590,14 @@
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.14em;
-  color: rgba(8, 119, 101, 0.55);
+  color: rgba(6, 79, 69, 0.66);
   text-transform: uppercase;
 }
 .rec-detail .val {
   font-family: var(--display);
   font-size: 16px;
   font-weight: 600;
-  color: #087765;
+  color: #064f45;
   letter-spacing: -0.01em;
 }
 .rec-detail .time-adjust {
@@ -609,7 +609,7 @@
 .rec-detail .time-adjust button.tbtn {
   border: 0;
   background: rgba(8, 119, 101, 0.08);
-  color: #087765;
+  color: #064f45;
   font-family: var(--mono);
   font-weight: 600;
   font-size: 12px;
@@ -623,7 +623,7 @@
   display: grid; place-items: center;
   border: 0;
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
   border-radius: 10px;
   font-family: var(--display);
   font-weight: 700;
@@ -672,7 +672,7 @@
   font-family: var(--mono);
   font-size: 10px;
   letter-spacing: 0.12em;
-  color: rgba(8, 119, 101, 0.58);
+  color: rgba(6, 79, 69, 0.68);
   text-transform: uppercase;
 }
 .activity-detail-field textarea {
@@ -682,8 +682,8 @@
   border: 1px solid rgba(8, 119, 101, 0.12);
   border-radius: 12px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.68);
-  color: #087765;
+  background: rgba(255, 255, 255, 0.94);
+  color: #064f45;
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   font-size: 14px;
   line-height: 1.35;
@@ -703,7 +703,7 @@
   cursor: pointer;
   letter-spacing: -0.01em;
 }
-.rec-detail .actions .btn-ghost { background: rgba(8, 119, 101, 0.08); color: #087765; }
+.rec-detail .actions .btn-ghost { background: rgba(8, 119, 101, 0.08); color: #064f45; }
 .rec-detail .actions .btn-ghost:hover { background: rgba(8, 119, 101, 0.12); }
 .rec-detail .actions .btn-save { background: var(--green); color: var(--paper); }
 .rec-detail .actions .btn-save:hover { background: rgba(18, 176, 149, 0.82); }
@@ -740,7 +740,7 @@
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(8, 119, 101, 0.54);
+  color: rgba(6, 79, 69, 0.64);
 }
 
 .rec-pill {
@@ -759,7 +759,7 @@
   padding: 10px 15px;
   border: 1px solid rgba(8, 119, 101, 0.14);
   background: transparent;
-  color: rgba(8, 119, 101, 0.7);
+  color: rgba(6, 79, 69, 0.78);
   font-family: var(--display);
   font-size: 15px;
   font-weight: 500;
@@ -770,11 +770,11 @@
 .fchip.on {
   border-color: transparent;
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
 }
 .fchip.filter-drink.on {
   background: var(--drink);
-  color: #087765;
+  color: #064f45;
 }
 .fchip.filter-review.on {
   background: var(--green);
@@ -823,7 +823,7 @@
 
 .rec-time {
   padding-top: 4px;
-  color: rgba(8, 119, 101, 0.62);
+  color: rgba(6, 79, 69, 0.72);
   font-size: 13px;
   letter-spacing: 0.02em;
   text-align: right;
@@ -839,14 +839,14 @@
 }
 
 .rec-name {
-  color: #087765;
+  color: #064f45;
   font-size: 18px;
   line-height: 1.15;
 }
 
 .rec-meta {
   margin-top: 7px;
-  color: rgba(8, 119, 101, 0.52);
+  color: rgba(6, 79, 69, 0.6);
   font-size: 12px;
   letter-spacing: 0.04em;
 }
@@ -857,7 +857,7 @@
   padding: 7px 8px;
   border-radius: 5px;
   background: rgba(255, 189, 138, 0.26);
-  color: #087765;
+  color: #064f45;
   font-family: var(--mono);
   font-size: 11px;
   text-align: center;
@@ -866,7 +866,7 @@
 .rec-size.run {
   min-width: 43px;
   background: rgba(18, 176, 149, 0.2);
-  color: #087765;
+  color: #064f45;
   letter-spacing: 0.14em;
 }
 

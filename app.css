@@ -2,8 +2,8 @@
   --bg: #dff7ef;
   --panel: #dff7ef;
   --panel-soft: #11b197;
-  --ink: #087765;
-  --muted: rgba(8, 119, 101, 0.58);
+  --ink: #064f45;
+  --muted: rgba(6, 79, 69, 0.68);
   --paper: #fbfffb;
   --peach: #ffbd8a;
   --peach-2: #ffab72;
@@ -81,7 +81,7 @@ button {
   height: 34px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.64);
+  background: rgba(255, 255, 255, 0.9);
   color: var(--ink);
 }
 
@@ -127,7 +127,7 @@ button {
   margin: 0 18px 18px;
   border-radius: 24px;
   background: var(--paper);
-  color: #087765;
+  color: #064f45;
   overflow: hidden;
 }
 
@@ -154,7 +154,7 @@ button {
 .ev.drink { background: var(--drink); }
 .ev.activity { background: var(--green); }
 .ev.mood { background: var(--red); }
-.ev.sleep { background: rgba(8, 119, 101, 0.7); }
+.ev.sleep { background: rgba(6, 79, 69, 0.78); }
 
 .timeline-axis {
   position: absolute;
@@ -178,7 +178,7 @@ button {
   padding: 18px 22px;
   border-radius: 24px;
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
 }
 
 .sick-banner {
@@ -188,7 +188,7 @@ button {
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(255, 101, 72, 0.14);
-  color: #087765;
+  color: #064f45;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
@@ -297,7 +297,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.5);
-  color: rgba(8, 119, 101, 0.52);
+  color: rgba(6, 79, 69, 0.6);
   font-family: var(--mono);
   font-size: 9px;
   font-weight: 700;
@@ -317,7 +317,7 @@ button {
   margin: 0 auto;
   padding: 5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.86);
   backdrop-filter: blur(16px);
 }
 
@@ -326,14 +326,14 @@ button {
   border-radius: 999px;
   padding: 10px 14px;
   background: transparent;
-  color: rgba(8, 119, 101, 0.62);
+  color: rgba(6, 79, 69, 0.72);
   font-weight: 700;
   font-size: 12px;
 }
 
 .nav-pill button.on {
   background: var(--paper);
-  color: #087765;
+  color: #064f45;
 }
 
 .rec-head {
@@ -347,7 +347,7 @@ button {
 .fchip {
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.58);
+  background: rgba(255, 255, 255, 0.86);
   color: var(--ink);
   padding: 9px 12px;
   font-size: 11px;
@@ -370,7 +370,7 @@ button {
 
 .fchip.on {
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
 }
 
 .rec-rail {
@@ -386,7 +386,7 @@ button {
   gap: 12px;
   padding: 13px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.56);
+  background: rgba(255, 255, 255, 0.86);
 }
 
 .rec-time,
@@ -403,7 +403,7 @@ button {
 }
 
 .rec-size {
-  color: #087765;
+  color: #064f45;
   background: var(--peach);
   border-radius: 999px;
   padding: 5px 7px;
@@ -428,7 +428,7 @@ button {
   padding: 12px 14px;
   border-radius: 18px;
   background: var(--paper);
-  color: #087765;
+  color: #064f45;
   box-shadow: 0 18px 40px rgba(18, 30, 28, 0.22);
 }
 
@@ -447,7 +447,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: var(--peach);
-  color: #087765;
+  color: #064f45;
   padding: 8px 10px;
   font-weight: 800;
 }
