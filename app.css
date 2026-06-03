@@ -1,16 +1,16 @@
 :root {
-  --bg: #202826;
-  --panel: #202826;
-  --panel-soft: #31423e;
-  --ink: #f4f1ea;
-  --muted: rgba(244, 241, 234, 0.58);
-  --paper: #f4f1ea;
-  --peach: #ffd2a6;
-  --peach-2: #e9bc8d;
-  --drink: #7fd6c8;
-  --drink-soft: rgba(127, 214, 200, 0.16);
-  --red: #ff5948;
-  --green: #5f9a88;
+  --bg: #1e251f;
+  --panel: #1e251f;
+  --panel-soft: #333d32;
+  --ink: #f1ede2;
+  --muted: rgba(241, 237, 226, 0.58);
+  --paper: #f1ede2;
+  --peach: #e6c39b;
+  --peach-2: #d4ad80;
+  --drink: #b6d96a;
+  --drink-soft: rgba(182, 217, 106, 0.16);
+  --red: #ff5544;
+  --green: #91b55f;
   --display: "Space Grotesk", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -127,7 +127,7 @@ button {
   margin: 0 18px 18px;
   border-radius: 24px;
   background: var(--paper);
-  color: #31423e;
+  color: #333d32;
   overflow: hidden;
 }
 
@@ -178,7 +178,7 @@ button {
   padding: 18px 22px;
   border-radius: 24px;
   background: var(--peach);
-  color: #31423e;
+  color: #333d32;
 }
 
 .sick-banner {
@@ -188,7 +188,7 @@ button {
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(255, 68, 47, 0.14);
-  color: #31423e;
+  color: #333d32;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
@@ -333,7 +333,7 @@ button {
 
 .nav-pill button.on {
   background: var(--paper);
-  color: #31423e;
+  color: #333d32;
 }
 
 .rec-head {
@@ -370,7 +370,7 @@ button {
 
 .fchip.on {
   background: var(--peach);
-  color: #31423e;
+  color: #333d32;
 }
 
 .rec-rail {
@@ -403,7 +403,7 @@ button {
 }
 
 .rec-size {
-  color: #31423e;
+  color: #333d32;
   background: var(--peach);
   border-radius: 999px;
   padding: 5px 7px;
@@ -428,7 +428,7 @@ button {
   padding: 12px 14px;
   border-radius: 18px;
   background: var(--paper);
-  color: #31423e;
+  color: #333d32;
   box-shadow: 0 18px 40px rgba(18, 30, 28, 0.22);
 }
 
@@ -447,7 +447,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: var(--peach);
-  color: #31423e;
+  color: #333d32;
   padding: 8px 10px;
   font-weight: 800;
 }
