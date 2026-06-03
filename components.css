@@ -727,7 +727,19 @@
 }
 
 .rec-head h2 {
+  margin-bottom: 2px;
   font-size: 28px;
+}
+.rec-title-block {
+  min-width: 0;
+}
+.rec-date-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(247,244,237,0.54);
 }
 
 .rec-pill {

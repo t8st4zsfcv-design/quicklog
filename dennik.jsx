@@ -25,7 +25,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.12';
+const APP_VERSION = 'V3.13';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -86,6 +86,16 @@ function addDaysToDateKey(dateKey, deltaDays) {
   const date = localDateFromKey(dateKey);
   date.setDate(date.getDate() + deltaDays);
   return formatLocalDateKey(date);
+}
+
+function formatRecordsDateLabel(dateKey) {
+  const date = localDateFromKey(dateKey);
+  return new Intl.DateTimeFormat('sk-SK', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  }).format(date);
 }
 
 function formatLocalTimestamp(date = new Date()) {
@@ -858,7 +868,10 @@ function Records({ events, selectedDateKey, reviewEvent, onSaveDayReview, onAdju
   return (
     <div className="scroll">
       <div className="rec-head">
-        <h2>Záznamy</h2>
+        <div className="rec-title-block">
+          <h2>Záznamy</h2>
+          <div className="rec-date-label">{formatRecordsDateLabel(selectedDateKey)}</div>
+        </div>
         <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
       </div>
       <div className="rec-filter">
