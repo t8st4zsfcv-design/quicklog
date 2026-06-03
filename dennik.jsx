@@ -25,7 +25,7 @@ const DRINK_SIZE_LABELS = {
 };
 const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.17';
+const APP_VERSION = 'V3.18';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -701,7 +701,7 @@ function DailyReview({ event, onSave }) {
 }
 
 function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
-  const featuredDrink = ['beer', 'spirits'];
+  const featuredDrink = ['beer'];
 
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const carbsItem = TURBO.find(t => t.sub === 'carbs');
@@ -745,33 +745,37 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
         </div>
       )}
 
-      <div className="section-title">
-        <h3>Logovanie</h3>
-        <small>POTIAHNI VPRAVO PRE S · M · L</small>
-      </div>
-
-      <div className="turbo-stack">
-        <div className="primary-log-group">
-          <button className="camera-banner" onClick={onOpenCamera} disabled={cameraBusy}>
+      <div className="home-priority">
+        <button className="camera-banner camera-banner-main" onClick={onOpenCamera} disabled={cameraBusy}>
             <div className="camera-banner-icon"><Icon.Cam/></div>
             <div className="camera-banner-text">
               <div className="camera-banner-title">Camera AI</div>
               <div className="camera-banner-hint">odfotiť jedlo · AI odhad sacharidov</div>
             </div>
-          </button>
+        </button>
+      </div>
 
+      <div className="section-title home-section-title">
+        <h3>Rýchlo</h3>
+        <small>POTIAHNI VPRAVO</small>
+      </div>
+      <div className="turbo-stack home-quick-stack">
+        <div className="quick-log-grid">
           <DragCard key={junkItem.sub} item={junkItem} onLog={onLogSize}/>
-        </div>
-
-        <div className="secondary-log-group">
-          <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize}/>
           {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
-
-          <MoodCard item={adrenalineItem} onLog={onLogSize}/>
         </div>
       </div>
 
-      <div className="section-title" style={{marginTop: 18}}>
+      <div className="section-title home-section-title secondary-title">
+        <h3>Doplnkové</h3>
+        <small>S · M · L</small>
+      </div>
+      <div className="turbo-stack home-secondary-stack">
+        <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize}/>
+        <MoodCard item={adrenalineItem} onLog={onLogSize}/>
+      </div>
+
+      <div className="section-title home-section-title" style={{marginTop: 18}}>
         <h3>Kontext</h3>
         <small>ŤUKNI · DETAIL / ON-OFF</small>
       </div>
