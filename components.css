@@ -531,7 +531,7 @@
   border-radius: 999px;
   padding: 9px 12px;
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
   font-size: 11px;
   font-weight: 800;
 }
@@ -622,7 +622,7 @@
   display: grid; place-items: center;
   border: 0;
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
   border-radius: 10px;
   font-family: var(--display);
   font-weight: 700;
@@ -769,7 +769,7 @@
 .fchip.on {
   border-color: transparent;
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
 }
 .fchip.filter-drink.on {
   background: var(--drink);

@@ -1,16 +1,16 @@
 :root {
-  --bg: #35514d;
-  --panel: #35514d;
-  --panel-soft: #54756e;
-  --ink: #f7f4ed;
-  --muted: rgba(247, 244, 237, 0.58);
-  --paper: #f9f9f7;
-  --peach: #ffd0a3;
-  --peach-2: #f4bd8f;
-  --drink: #7fc9c7;
-  --drink-soft: rgba(127, 201, 199, 0.16);
-  --red: #ff442f;
-  --green: #4f8a78;
+  --bg: #202826;
+  --panel: #202826;
+  --panel-soft: #31423e;
+  --ink: #f4f1ea;
+  --muted: rgba(244, 241, 234, 0.58);
+  --paper: #f4f1ea;
+  --peach: #ffd2a6;
+  --peach-2: #e9bc8d;
+  --drink: #7fd6c8;
+  --drink-soft: rgba(127, 214, 200, 0.16);
+  --red: #ff5948;
+  --green: #5f9a88;
   --display: "Space Grotesk", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -127,7 +127,7 @@ button {
   margin: 0 18px 18px;
   border-radius: 24px;
   background: var(--paper);
-  color: #405956;
+  color: #31423e;
   overflow: hidden;
 }
 
@@ -178,7 +178,7 @@ button {
   padding: 18px 22px;
   border-radius: 24px;
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
 }
 
 .sick-banner {
@@ -188,7 +188,7 @@ button {
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(255, 68, 47, 0.14);
-  color: #405956;
+  color: #31423e;
   font-family: var(--mono);
   font-size: 8px;
   font-weight: 700;
@@ -228,7 +228,7 @@ button {
   padding: 6px 8px;
 }
 .stat-sick b {
-  color: #ff442f;
+  color: var(--red);
 }
 
 .section-title {
@@ -333,7 +333,7 @@ button {
 
 .nav-pill button.on {
   background: var(--paper);
-  color: #405956;
+  color: #31423e;
 }
 
 .rec-head {
@@ -370,7 +370,7 @@ button {
 
 .fchip.on {
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
 }
 
 .rec-rail {
@@ -403,7 +403,7 @@ button {
 }
 
 .rec-size {
-  color: #405956;
+  color: #31423e;
   background: var(--peach);
   border-radius: 999px;
   padding: 5px 7px;
@@ -428,7 +428,7 @@ button {
   padding: 12px 14px;
   border-radius: 18px;
   background: var(--paper);
-  color: #405956;
+  color: #31423e;
   box-shadow: 0 18px 40px rgba(18, 30, 28, 0.22);
 }
 
@@ -447,7 +447,7 @@ button {
   border: 0;
   border-radius: 999px;
   background: var(--peach);
-  color: #405956;
+  color: #31423e;
   padding: 8px 10px;
   font-weight: 800;
 }
