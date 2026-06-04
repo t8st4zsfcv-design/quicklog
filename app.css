@@ -1,16 +1,20 @@
 :root {
-  --bg: #dff7ef;
-  --panel: #dff7ef;
-  --panel-soft: #11b197;
-  --ink: #064f45;
-  --muted: rgba(6, 79, 69, 0.68);
-  --paper: #fbfffb;
-  --peach: #ffbd8a;
-  --peach-2: #ffab72;
-  --drink: #cce96c;
-  --drink-soft: rgba(17, 177, 151, 0.12);
-  --red: #ff6548;
-  --green: #12b095;
+  --bg: #e8f6ee;
+  --panel: #f6f6f2;
+  --panel-soft: #f4faf6;
+  --ink: #0f3b35;
+  --muted: #4d736c;
+  --paper: #ffffff;
+  --peach: #ffb27a;
+  --peach-2: #ff7d63;
+  --drink: #9bd64a;
+  --drink-soft: #e9f6cf;
+  --red: #ff7d63;
+  --green: #18a98e;
+  --hair: rgba(15, 59, 53, 0.08);
+  --hair-soft: rgba(15, 59, 53, 0.05);
+  --shadow-card: 0 1px 1px rgba(15, 59, 53, 0.03), 0 4px 14px rgba(15, 59, 53, 0.05);
+  --shadow-lift: 0 2px 6px rgba(15, 59, 53, 0.06), 0 16px 40px rgba(15, 59, 53, 0.09);
   --display: "Space Grotesk", Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
 }
@@ -23,7 +27,11 @@ html,
 body {
   min-height: 100%;
   margin: 0;
-  background: var(--bg);
+  background:
+    radial-gradient(80% 60% at 8% -8%, #f6fcf6 0%, transparent 52%),
+    radial-gradient(70% 60% at 102% 2%, #ffe9de 0%, transparent 46%),
+    radial-gradient(95% 85% at 88% 108%, #bfe6d4 0%, transparent 56%),
+    linear-gradient(168deg, #e9f6ee 0%, #d6efe1 60%, #cfead9 100%);
   color: var(--ink);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -47,7 +55,7 @@ button {
   overflow: hidden;
   border-radius: 0;
   background: var(--panel);
-  box-shadow: 0 24px 70px rgba(8, 119, 101, 0.18);
+  box-shadow: var(--shadow-lift);
 }
 
 .screen {
@@ -56,14 +64,44 @@ button {
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   height: 100%;
   overflow: hidden;
-  background: var(--panel);
+  background: linear-gradient(180deg, #ffccb8 0%, #ffe0d3 11%, #fbeee8 28%, #f6f6f2 55%, #f3f6f1 100%);
 }
 
 .head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 28px 20px;
+  gap: 14px;
+  padding: 16px 24px 18px;
+}
+
+.head-title {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+}
+
+.head-title span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.head-title strong {
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .day-switcher {
@@ -77,12 +115,14 @@ button {
 .icon-btn {
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 38px;
+  height: 38px;
   border: 0;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.72);
   color: var(--ink);
+  box-shadow: var(--shadow-card);
+  backdrop-filter: blur(6px);
 }
 
 .arr:disabled,
@@ -107,7 +147,7 @@ button {
   min-height: 0;
   overflow-y: auto;
   padding-bottom: 92px;
-  background: var(--panel);
+  background: transparent;
   scrollbar-width: none;
 }
 
@@ -123,11 +163,13 @@ button {
 
 .timeline {
   position: relative;
-  height: 88px;
-  margin: 0 18px 18px;
+  height: 82px;
+  margin: 0 18px 14px;
   border-radius: 24px;
   background: var(--paper);
   color: #064f45;
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--hair-soft);
   overflow: hidden;
 }
 
@@ -170,15 +212,119 @@ button {
 
 .stats {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  margin: 0 18px 22px;
+  padding: 20px;
+  border-radius: 28px;
+  background: var(--paper);
+  color: var(--ink);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--hair-soft);
+}
+
+.carb-ring {
+  --pct: 0%;
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto auto auto;
-  align-items: end;
-  gap: 14px;
-  margin: 0 18px 28px;
-  padding: 18px 22px;
-  border-radius: 24px;
-  background: var(--peach);
-  color: #064f45;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: conic-gradient(var(--red) var(--pct), #eef6f2 0);
+}
+
+.carb-ring::before {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border-radius: 50%;
+  background: var(--paper);
+}
+
+.carb-ring-inner {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  justify-items: center;
+  color: var(--ink);
+}
+
+.carb-ring-inner b {
+  font-family: var(--display);
+  font-size: 25px;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+}
+
+.carb-ring-inner span {
+  margin-left: 1px;
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.carb-ring-inner small {
+  margin-top: 3px;
+  font-family: var(--mono);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.summary-active {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+  padding-left: 4px;
+}
+
+.summary-kicker {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.summary-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #cadbd5;
+}
+
+.summary-dot.on {
+  background: var(--drink);
+}
+
+.summary-title {
+  overflow: hidden;
+  font-family: var(--display);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.summary-pill {
+  justify-self: start;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--panel-soft);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.summary-pill.on {
+  background: var(--drink-soft);
+  color: #4f6817;
 }
 
 .sick-banner {
@@ -197,7 +343,7 @@ button {
 
 .stat-big {
   font-family: var(--display);
-  font-size: 42px;
+  font-size: 44px;
   font-weight: 800;
   line-height: 0.9;
 }
@@ -236,7 +382,7 @@ button {
   align-items: end;
   justify-content: space-between;
   gap: 12px;
-  padding: 0 18px 14px;
+  padding: 0 20px 10px;
 }
 
 .section-title h3,
@@ -260,7 +406,7 @@ button {
 .bottom-bar {
   position: absolute;
   right: 18px;
-  bottom: 22px;
+  bottom: 18px;
   left: 18px;
   display: grid;
   align-items: center;
@@ -296,8 +442,9 @@ button {
   padding: 0 9px;
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  color: rgba(6, 79, 69, 0.6);
+  background: rgba(255, 255, 255, 0.72);
+  color: rgba(15, 59, 53, 0.52);
+  box-shadow: var(--shadow-card);
   font-family: var(--mono);
   font-size: 9px;
   font-weight: 700;
@@ -313,27 +460,40 @@ button {
   justify-self: center;
   display: inline-flex;
   justify-content: center;
-  gap: 4px;
+  gap: 8px;
+  width: min(100%, 388px);
   margin: 0 auto;
-  padding: 5px;
+  padding: 7px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255,255,255,0.92);
   backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow: 0 10px 36px rgba(15, 59, 53, 0.12);
 }
 
 .nav-pill button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  flex: 1;
   border: 0;
   border-radius: 999px;
-  padding: 10px 14px;
+  padding: 13px 16px;
   background: transparent;
   color: rgba(6, 79, 69, 0.72);
   font-weight: 700;
-  font-size: 12px;
+  font-size: 18px;
 }
 
 .nav-pill button.on {
-  background: var(--paper);
-  color: #064f45;
+  background: var(--ink);
+  color: #fff;
+}
+
+.nav-pill svg {
+  width: 20px;
+  height: 20px;
 }
 
 .rec-head {
@@ -347,8 +507,9 @@ button {
 .fchip {
   border: 0;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.86);
+  background: rgba(255,255,255,0.72);
   color: var(--ink);
+  box-shadow: var(--shadow-card);
   padding: 9px 12px;
   font-size: 11px;
   font-weight: 800;
@@ -386,7 +547,9 @@ button {
   gap: 12px;
   padding: 13px 14px;
   border-radius: 14px;
-  background: rgba(255, 255, 255, 0.86);
+  background: var(--paper);
+  box-shadow: var(--shadow-card);
+  border: 1px solid var(--hair-soft);
 }
 
 .rec-time,
@@ -427,9 +590,9 @@ button {
   gap: 10px;
   padding: 12px 14px;
   border-radius: 18px;
-  background: var(--paper);
-  color: #064f45;
-  box-shadow: 0 18px 40px rgba(18, 30, 28, 0.22);
+  background: var(--ink);
+  color: #fff;
+  box-shadow: var(--shadow-lift);
 }
 
 .toast .dot {

@@ -18,14 +18,8 @@ const TURBO = [
 
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
-const SIZE_LABELS = { S: 'malé · ~15g', M: 'stredné · ~30g', L: 'veľké · ~60g+' };
-const BEER_SIZE_LABELS = { S: '0.3L · 12g', M: '0.5L · 20g', L: '0.7L+ · 28g' };
-const DRINK_SIZE_LABELS = {
-  spirits: { S: '1 drink', M: '2 drinky', L: '3+ drinky' }
-};
-const MOOD_SIZE_LABELS = { M: 'med intenzita', L: 'high intenzita' };
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.18';
+const APP_VERSION = 'V3.19';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -38,13 +32,6 @@ const LEGACY_STORAGE_KEYS = ['fasttrack-diary-events-v1'];
 const LEGACY_EXTRA_SIZE = ['X', 'L'].join('');
 const INTENSITY_BY_SIZE = { M: 'med', L: 'high' };
 const SIZE_BY_INTENSITY = { med: 'M', high: 'L' };
-
-function sizeHintFor(item, size) {
-  if (item?.cat === 'mood') return MOOD_SIZE_LABELS[size] || size;
-  if (item?.sub === 'beer') return BEER_SIZE_LABELS[size];
-  if (item?.cat === 'drink') return DRINK_SIZE_LABELS[item.sub]?.[size] || size;
-  return SIZE_LABELS[size];
-}
 
 function carbsForSize(cat, sub, size) {
   if (!size || (cat !== 'food' && sub !== 'beer')) return undefined;
@@ -125,6 +112,21 @@ function currentClock() {
     dateKey: formatLocalDateKey(now),
     time: `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`,
     hour: h + (m / 60)
+  };
+}
+
+function clockFromDateKeyAndTime(dateKey, timeValue) {
+  const [hh, mm] = String(timeValue || '').split(':').map(Number);
+  if (!Number.isFinite(hh) || !Number.isFinite(mm)) return currentClock();
+  const hour = Math.max(0, Math.min(23.99, hh + (mm / 60)));
+  const timestamp = timestampFromDateKeyAndHour(dateKey || formatLocalDateKey(), hour);
+  const date = new Date(timestamp);
+  return {
+    timestamp,
+    timestampLocal: formatLocalTimestamp(date),
+    dateKey: formatLocalDateKey(date),
+    time: formatHour(hour),
+    hour
   };
 }
 
@@ -423,7 +425,32 @@ const Icon = {
   Cam: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M5 7h3l1.5-2h5L16 7h3a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2Z"/><circle cx="12" cy="13" r="3.5"/></svg>,
   Refresh: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M20 11a8 8 0 1 0-2.34 5.66"/><path d="M20 5v6h-6"/></svg>,
   Undo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 14L4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>,
+  Home: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 10.5 12 4l8 6.5"/><path d="M6.5 10v9h11v-9"/></svg>,
+  List: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 6h12M8 12h12M8 18h12"/><path d="M4 6h.01M4 12h.01M4 18h.01"/></svg>,
+  Gym: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M4 9v6M20 9v6M8 7v10M16 7v10M8 12h8"/></svg>,
+  Work: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M8 8V6.5A2.5 2.5 0 0 1 10.5 4h3A2.5 2.5 0 0 1 16 6.5V8"/><path d="M5 8h14v10H5z"/></svg>,
+  Cannula: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="7" y="7" width="10" height="10" rx="3"/><circle cx="12" cy="12" r="2.2"/></svg>,
+  Meds: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="5" y="9" width="14" height="6" rx="3"/><path d="M12 9v6"/></svg>,
+  Thermo: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M10 14.5V5.8a2 2 0 1 1 4 0v8.7a4 4 0 1 1-4 0Z"/><path d="M12 7v7"/></svg>,
+  Junk: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="5"/><path d="M10 10h.01M14 10h.01M10 14c1.2.8 2.8.8 4 0"/></svg>,
+  Beer: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M7 6h9v13H7z"/><path d="M16 9h2a3 3 0 0 1 0 6h-2"/><path d="M9 6V4m4 2V4"/></svg>,
+  Hash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 4 7 20M17 4l-2 16M4 9h18M3 15h18"/></svg>,
+  Bolt: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M13 2 5 14h7l-1 8 8-13h-7z"/></svg>,
 };
+
+function quickIconFor(item) {
+  if (item?.sub === 'junk') return <Icon.Junk/>;
+  if (item?.sub === 'beer') return <Icon.Beer/>;
+  if (item?.sub === 'carbs') return <Icon.Hash/>;
+  if (item?.sub === 'adrenaline') return <Icon.Bolt/>;
+  return null;
+}
+
+function quickSubtitleFor(item) {
+  if (item?.sub === 'carbs') return 'manual';
+  if (item?.sub === 'adrenaline') return 'med';
+  return item?.cat || '';
+}
 
 function dateKeyOffsetFromToday(dateKey) {
   const today = localDateFromKey(formatLocalDateKey());
@@ -433,16 +460,18 @@ function dateKeyOffsetFromToday(dateKey) {
 
 function Header({ selectedDateKey, setSelectedDateKey, onUndo, canUndo }) {
   const dayOffset = dateKeyOffsetFromToday(selectedDateKey);
-  const labels = { 0: 'DNES', '-1': 'VČERA', '-2': 'PREDVČER.' };
-  const lbl = labels[dayOffset] || (dayOffset < 0 ? `−${Math.abs(dayOffset)} DNÍ` : selectedDateKey);
+  const labels = { 0: 'Today', '-1': 'Yesterday', '-2': '2 days ago' };
+  const dayLabel = labels[dayOffset] || (dayOffset < 0 ? `${Math.abs(dayOffset)} days ago` : 'Selected day');
+  const monthDay = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(localDateFromKey(selectedDateKey));
   return (
     <div className="head">
-      <div className="day-switcher">
-        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, -1))}>‹</button>
-        <span className="lbl"><b>{lbl}</b></span>
-        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, 1))} disabled={dayOffset >= 0}>›</button>
+      <div className="head-title">
+        <span>Good evening</span>
+        <strong>{dayLabel} · {monthDay}</strong>
       </div>
-      <div className="top-icons">
+      <div className="head-actions">
+        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, -1))}>‹</button>
+        <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, 1))} disabled={dayOffset >= 0}>›</button>
         <button className="icon-btn" disabled={!canUndo} onClick={onUndo} style={{opacity: canUndo ? 1 : 0.4}}><Icon.Undo/></button>
       </div>
     </div>
@@ -470,144 +499,22 @@ function Timeline({ events }) {
 }
 
 // ====== Step drag card (S/M/L) ======
-function DragCard({ item, onLog, sizes = SIZES }) {
-  const [dragging, setDragging] = useState(false);
-  const [dragArmed, setDragArmed] = useState(false);
-  const [sizeIdx, setSizeIdx] = useState(0);
-  const startPoint = useRef(null);
-  const startX = useRef(null);
-  const startY = useRef(null);
-  const dragActive = useRef(false);
-  const pctRef = useRef(0);
-  const sizeIdxRef = useRef(0);
-  const pointerIdRef = useRef(null);
-  const spanRef = useRef(200);
-  const ref = useRef(null);
-  const minCommitPct = 0.16;
-  const dragZoneRatio = 0.5;
-
-  const isInDragZone = (clientX) => {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return true;
-    return clientX <= rect.left + (rect.width * dragZoneRatio);
-  };
-
-  const computeIdx = (p) => {
-    const idx = Math.floor(Math.min(0.999, Math.max(0, p)) * sizes.length);
-    return Math.max(0, Math.min(sizes.length - 1, idx));
-  };
-
-  const resetDrag = () => {
-    startPoint.current = null;
-    startX.current = null;
-    startY.current = null;
-    dragActive.current = false;
-    pointerIdRef.current = null;
-    pctRef.current = 0;
-    sizeIdxRef.current = 0;
-    setDragArmed(false);
-    setDragging(false);
-    setSizeIdx(0);
-  };
-
-  const updateDrag = (event) => {
-    if (startPoint.current == null) return;
-    const delta = event.clientX - startPoint.current;
-    const p = Math.min(1, Math.max(0, delta / spanRef.current));
-    const idx = computeIdx(p);
-    pctRef.current = p;
-    sizeIdxRef.current = idx;
-    setSizeIdx((currentIdx) => currentIdx === idx ? currentIdx : idx);
-  };
-
-  const onPointerDown = (e) => {
-    if (e.button !== undefined && e.button !== 0) return;
-    if (!isInDragZone(e.clientX)) {
-      resetDrag();
-      return;
-    }
-    startPoint.current = e.clientX;
-    startX.current = e.clientX;
-    startY.current = e.clientY;
-    pointerIdRef.current = e.pointerId;
-    spanRef.current = ref.current?.offsetWidth || 200;
-    pctRef.current = 0;
-    sizeIdxRef.current = 0;
-    setDragArmed(true);
-    dragActive.current = false;
-    setSizeIdx(0);
-  };
-  const onPointerMove = (e) => {
-    if (pointerIdRef.current !== e.pointerId) return;
-    if (!dragActive.current) {
-      const dx = e.clientX - startX.current;
-      const dy = Math.abs(e.clientY - startY.current);
-      if (dy > 18 && dy > Math.abs(dx) * 1.6) {
-        resetDrag();
-        return;
-      }
-      if (dx < 4 || dx < dy * 0.35) return;
-      dragActive.current = true;
-      ref.current?.setPointerCapture?.(e.pointerId);
-      setDragging(true);
-    }
-    e.preventDefault();
-    updateDrag(e);
-  };
-  const onPointerUp = (e) => {
-    if (pointerIdRef.current !== e.pointerId) return;
-    if (!dragActive.current) {
-      resetDrag();
-      return;
-    }
-    e.preventDefault();
-    updateDrag(e);
-    ref.current?.releasePointerCapture?.(e.pointerId);
-    if (pctRef.current >= minCommitPct) {
-      onLog({ ...item, size: sizes[sizeIdxRef.current] });
-    }
-    resetDrag();
-  };
-  const onPointerCancel = (e) => {
-    if (pointerIdRef.current !== e.pointerId) return;
-    resetDrag();
-  };
-  const fillPct = dragging ? ((sizeIdx + 1) / sizes.length) * 100 : 0;
-  const currentSize = dragging ? sizes[sizeIdx] : null;
-
+function DragCard({ item, onTap, sizes = SIZES }) {
   return (
-    <div
-      ref={ref}
-      className={`tcard drag steps-${sizes.length} full-width ${dragArmed ? 'drag-armed' : ''} ${dragging ? 'dragging' : ''} cat-${item.cat}`}
-      data-size={currentSize || ''}
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerCancel={onPointerCancel}
-      style={{ '--fill': `${fillPct}%` }}
-    >
-      <div className="tcard-fill" />
-      <div className="tcard-ticks"><i/></div>
+    <button className={`tcard quick-card steps-${sizes.length} full-width cat-${item.cat}`} onClick={() => onTap?.(item, sizes)}>
       <div className="tcard-body">
         <div className="tcard-meta">
-          <span className={`cat-dot dot-${item.cat}`} />
-          <span className="sub">{item.cat}</span>
+          <span className={`cat-dot dot-${item.cat}`}>{quickIconFor(item)}</span>
         </div>
         <div className="name">{item.label}</div>
+        <div className="sub">{quickSubtitleFor(item)}</div>
       </div>
       <div className="tcard-right">
-        {dragging ? (
-          <div className="size-pop">
-            <div className="size-big">{currentSize}</div>
-            <div className="size-hint">{sizeHintFor(item, currentSize)}</div>
-          </div>
-        ) : (
-          <div className="size-ladder">
-            {sizes.map((s) => <span key={s}>{s}</span>)}
-          </div>
-        )}
+        <div className="size-ladder">
+          {sizes.map((s) => <span key={s}>{s}</span>)}
+        </div>
       </div>
-    </div>
+    </button>
   );
 }
 
@@ -643,8 +550,117 @@ function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
   );
 }
 
-function MoodCard({ item, onLog }) {
-  return <DragCard item={item} onLog={onLog} sizes={ADRENALINE_LEVELS} />;
+function ContextToggle({ item, runningEvent, onStart, onStop, icon }) {
+  const isRunning = runningEvent && runningEvent.sub === item.sub;
+  return (
+    <button
+      className={`context-toggle ${isRunning ? 'running' : ''}`}
+      onClick={() => isRunning ? onStop(runningEvent.id) : onStart(item)}
+    >
+      <span className="context-icon">{icon}</span>
+      <span className="context-toggle-label">{item.label}</span>
+      <span className="ios-switch" aria-hidden="true"><i/></span>
+    </button>
+  );
+}
+
+function ContextAction({ item, runningEvent, onStart, onStop, onLog, icon }) {
+  const isRunning = runningEvent && runningEvent.sub === item.sub;
+  return (
+    <button
+      className={`context-action cat-${item.cat} sub-${item.sub} ${isRunning ? 'running' : ''}`}
+      onClick={() => {
+        if (isRunning) return onStop(runningEvent.id);
+        if (item.timer) return onStart(item);
+        return onLog({ sub: item.sub, label: item.label, cat: item.cat });
+      }}
+    >
+      <span className="context-action-icon">{icon}</span>
+      <span className="context-action-name">{item.label}</span>
+    </button>
+  );
+}
+
+function MoodCard({ item, onTap }) {
+  return <DragCard item={item} onTap={onTap} sizes={ADRENALINE_LEVELS} />;
+}
+
+function QuickLogSheet({ item, sizes, selectedDateKey, onClose, onLog }) {
+  const initial = sizes.includes('M') ? 'M' : sizes[0];
+  const [selectedSize, setSelectedSize] = useState(initial);
+  const [timeValue, setTimeValue] = useState(() => {
+    const now = new Date();
+    return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+  });
+  useEffect(() => setSelectedSize(initial), [item?.sub, initial]);
+  useEffect(() => {
+    const now = new Date();
+    setTimeValue(`${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`);
+  }, [item?.sub]);
+  if (!item) return null;
+
+  const isAdrenaline = item.sub === 'adrenaline';
+  const description = item.sub === 'beer'
+    ? 'only drink counted as carbs'
+    : item.cat === 'food'
+      ? 'manual carbs quick log'
+      : item.cat === 'mood'
+        ? 'stress spike · no carbs'
+        : quickSubtitleFor(item);
+  const sizeText = (size) => {
+    if (isAdrenaline) return size === 'L' ? 'strong / acute' : 'noticeable';
+    const carbs = carbsForSize(item.cat, item.sub, size);
+    if (Number.isFinite(carbs)) return `~${carbs}g`;
+    if (item.cat === 'mood') return size === 'L' ? 'high' : 'med';
+    return size;
+  };
+
+  return (
+    <div className="quick-sheet-backdrop" onClick={onClose}>
+      <div className={`quick-sheet ${isAdrenaline ? 'adrenaline-sheet' : ''}`} onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-handle" />
+        <div className="sheet-head">
+          <div className={`sheet-icon dot-${item.cat}`}>{quickIconFor(item)}</div>
+          <div>
+            <div className="sheet-title">{item.label}</div>
+            <div className="sheet-desc">{description}</div>
+          </div>
+        </div>
+        <div className={`sheet-size-row sizes-${sizes.length}`}>
+          {sizes.map((size) => (
+            <button
+              key={size}
+              className={`sheet-size ${selectedSize === size ? 'selected' : ''}`}
+              onClick={() => setSelectedSize(size)}
+            >
+              <b>{isAdrenaline ? (size === 'L' ? 'High' : 'Medium') : size}</b>
+              <span>{sizeText(size)}</span>
+            </button>
+          ))}
+        </div>
+        {!isAdrenaline && (
+          <label className="sheet-time native-sheet-time">
+            <span>Time</span>
+            <b>now · {timeValue}</b>
+            <input type="time" value={timeValue} onChange={(e) => setTimeValue(e.target.value)} />
+          </label>
+        )}
+        <button
+          className="sheet-log"
+          onClick={() => {
+            onLog({
+              ...item,
+              size: selectedSize,
+              ...(isAdrenaline ? {} : clockFromDateKeyAndTime(selectedDateKey, timeValue))
+            });
+            onClose();
+          }}
+        >
+          Log {item.label}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 function CameraCard({ onOpenCamera, disabled }) {
@@ -701,34 +717,49 @@ function DailyReview({ event, onSave }) {
 }
 
 function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
+  const [quickSheet, setQuickSheet] = useState(null);
   const featuredDrink = ['beer'];
 
   const drinkItems = featuredDrink.map((s) => TURBO.find(t => t.sub === s));
   const carbsItem = TURBO.find(t => t.sub === 'carbs');
   const junkItem = TURBO.find(t => t.sub === 'junk');
   const adrenalineItem = TURBO.find(t => t.sub === 'adrenaline');
-  const activityItems = TURBO.filter(t => t.cat === 'activity');
+  const contextToggles = [
+    { sub: 'gym', cat: 'activity', label: 'Gym', timer: true, icon: <Icon.Gym/> },
+    { sub: 'hard_work', cat: 'activity', label: 'Hard work', timer: true, icon: <Icon.Work/> }
+  ];
+  const contextActions = [
+    { ...TURBO.find(t => t.sub === 'cannula'), icon: <Icon.Cannula/> },
+    { ...TURBO.find(t => t.sub === 'meds'), icon: <Icon.Meds/> },
+    { sub: 'sick', cat: 'mood', label: 'Sick', timer: true, icon: <Icon.Thermo/> }
+  ];
   const logEvents = events.filter(e => e.cat !== 'review');
 
   const carbs = logEvents
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
     .reduce((s, e) => s + (e.carbs || 0), 0);
   const activeToday = logEvents.some(e => e.running) ? 1 : 0;
+  const activeLabel = runningSickEvent ? 'Sick' : runningEvent?.label || 'Resting';
+  const activeHint = runningSickEvent ? 'On now' : runningEvent ? 'On now' : 'No active state';
+  const ringPct = Math.min(100, Math.round((carbs / 180) * 100));
+  const openQuickSheet = (item, sizes = SIZES) => setQuickSheet({ item, sizes });
 
   return (
     <div className="scroll">
-      <Timeline events={logEvents}/>
-
       <div className="stats">
-        <div className="stat-big">{carbs}<span className="unit">g</span></div>
-        <div className="stat-mini"><b>{logEvents.length}</b>EVENTOV</div>
-        <div className="stat-mini"><b>{activeToday}</b>AKTÍV.</div>
-        {runningSickEvent && (
-          <div className="stat-mini stat-sick">
-            <b><LiveTimer startTimestamp={runningSickEvent.timestamp}/></b>
-            SICK
+        <div className="carb-ring" style={{ '--pct': `${ringPct}%` }}>
+          <div className="carb-ring-inner">
+            <b>{carbs}<span>g</span></b>
+            <small>CARBS</small>
           </div>
-        )}
+        </div>
+        <div className="summary-active">
+          <div className="summary-kicker"><span className={`summary-dot ${activeToday ? 'on' : ''}`}></span> Active</div>
+          <div className="summary-title">{activeLabel}</div>
+          <div className={`summary-pill ${activeToday ? 'on' : ''}`}>
+            {runningSickEvent ? <LiveTimer startTimestamp={runningSickEvent.timestamp}/> : activeHint}
+          </div>
+        </div>
       </div>
 
       {aiResult && (
@@ -745,51 +776,51 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
         </div>
       )}
 
-      <div className="home-priority">
-        <button className="camera-banner camera-banner-main" onClick={onOpenCamera} disabled={cameraBusy}>
-            <div className="camera-banner-icon"><Icon.Cam/></div>
-            <div className="camera-banner-text">
-              <div className="camera-banner-title">Camera AI</div>
-              <div className="camera-banner-hint">odfotiť jedlo · AI odhad sacharidov</div>
-            </div>
-        </button>
-      </div>
-
       <div className="section-title home-section-title">
-        <h3>Rýchlo</h3>
-        <small>POTIAHNI VPRAVO</small>
+        <h3>Quick log</h3>
       </div>
       <div className="turbo-stack home-quick-stack">
         <div className="quick-log-grid">
-          <DragCard key={junkItem.sub} item={junkItem} onLog={onLogSize}/>
-          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onLog={onLogSize}/>)}
+          <DragCard key={junkItem.sub} item={junkItem} onTap={openQuickSheet}/>
+          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onTap={openQuickSheet}/>)}
+          <DragCard key={carbsItem.sub} item={carbsItem} onTap={openQuickSheet}/>
+          <MoodCard item={adrenalineItem} onTap={openQuickSheet}/>
         </div>
       </div>
 
-      <div className="section-title home-section-title secondary-title">
-        <h3>Doplnkové</h3>
-        <small>S · M · L</small>
-      </div>
-      <div className="turbo-stack home-secondary-stack">
-        <DragCard key={carbsItem.sub} item={carbsItem} onLog={onLogSize}/>
-        <MoodCard item={adrenalineItem} onLog={onLogSize}/>
+      <div className="home-priority camera-after-quick">
+        <button className="camera-banner camera-banner-main" onClick={onOpenCamera} disabled={cameraBusy}>
+            <div className="camera-banner-icon"><Icon.Cam/></div>
+            <div className="camera-banner-text">
+              <div className="camera-banner-title">Camera</div>
+              <div className="camera-banner-hint"><span className="cam-ai-pill">AI</span> odfotiť jedlo · odhad sacharidov</div>
+            </div>
+            <div className="camera-banner-go">›</div>
+        </button>
       </div>
 
       <div className="section-title home-section-title" style={{marginTop: 18}}>
-        <h3>Kontext</h3>
-        <small>ŤUKNI · DETAIL / ON-OFF</small>
+        <h3>Context</h3>
       </div>
-      <div className="turbo-grid timers">
-        {activityItems.map((item) => (
-          <TimerCard key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} onLog={onLogSize}/>
-        ))}
-        <TimerCard
-          item={{ sub: 'sick', cat: 'mood', label: 'Sick', timer: true }}
-          runningEvent={runningSickEvent}
-          onStart={onStartSick}
-          onStop={onStopSick}
-          onLog={onLogSize}
-        />
+      <div className="context-panel">
+        <div className="context-toggle-row">
+          {contextToggles.map((item) => (
+            <ContextToggle key={item.sub} item={item} runningEvent={runningEvent} onStart={onStartTimer} onStop={onStopTimer} icon={item.icon}/>
+          ))}
+        </div>
+        <div className="context-action-row">
+          {contextActions.map((item) => (
+            <ContextAction
+              key={item.sub}
+              item={item}
+              runningEvent={item.sub === 'sick' ? runningSickEvent : runningEvent}
+              onStart={item.sub === 'sick' ? onStartSick : onStartTimer}
+              onStop={item.sub === 'sick' ? onStopSick : onStopTimer}
+              onLog={onLogSize}
+              icon={item.icon}
+            />
+          ))}
+        </div>
       </div>
 
       <button className="content-version" onClick={onRefresh} aria-label={`Obnoviť appku, verzia ${APP_VERSION}`}>
@@ -797,6 +828,15 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
         <span>{APP_VERSION}</span>
       </button>
       <div style={{height: 24}}/>
+      {quickSheet && (
+        <QuickLogSheet
+          item={quickSheet.item}
+          sizes={quickSheet.sizes}
+          selectedDateKey={selectedDateKey}
+          onClose={() => setQuickSheet(null)}
+          onLog={onLogSize}
+        />
+      )}
     </div>
   );
 }
@@ -1014,6 +1054,11 @@ function App() {
       label: data.label,
       cat: data.cat,
       size: data.size,
+      timestamp: data.timestamp,
+      timestampLocal: data.timestampLocal,
+      dateKey: data.dateKey,
+      time: data.time,
+      hour: data.hour,
       intensity: data.cat === 'mood' ? INTENSITY_BY_SIZE[data.size] : undefined
     });
   };
@@ -1257,8 +1302,8 @@ function App() {
           onChange={onCameraFile}
         />
         <div className="nav-pill">
-          <button className={view==='home'?'on':''} onClick={() => setView('home')}>Hlavná</button>
-          <button className={view==='records'?'on':''} onClick={() => setView('records')}>Záznamy</button>
+          <button className={view==='home'?'on':''} onClick={() => setView('home')}><Icon.Home/> Home</button>
+          <button className={view==='records'?'on':''} onClick={() => setView('records')}><Icon.List/> Records</button>
         </div>
       </div>
 
