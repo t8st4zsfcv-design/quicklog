@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.19';
+const APP_VERSION = 'V3.20';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -452,6 +452,30 @@ function quickSubtitleFor(item) {
   return item?.cat || '';
 }
 
+function recordIconFor(event) {
+  if (event?.source === 'ai_camera') return <Icon.Cam/>;
+  if (event?.sub === 'junk') return <Icon.Junk/>;
+  if (event?.sub === 'beer') return <Icon.Beer/>;
+  if (event?.sub === 'carbs') return <Icon.Hash/>;
+  if (event?.sub === 'adrenaline') return <Icon.Bolt/>;
+  if (event?.sub === 'gym') return <Icon.Gym/>;
+  if (event?.sub === 'hard_work') return <Icon.Work/>;
+  if (event?.sub === 'cannula') return <Icon.Cannula/>;
+  if (event?.sub === 'meds') return <Icon.Meds/>;
+  if (event?.sub === 'sick') return <Icon.Thermo/>;
+  return null;
+}
+
+function formatRecordsSubtitle(dateKey, count) {
+  const date = localDateFromKey(dateKey);
+  const label = new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric'
+  }).format(date);
+  return `${label} · ${count} ${count === 1 ? 'event' : 'events'}`;
+}
+
 function dateKeyOffsetFromToday(dateKey) {
   const today = localDateFromKey(formatLocalDateKey());
   const selected = localDateFromKey(dateKey);
@@ -478,28 +502,7 @@ function Header({ selectedDateKey, setSelectedDateKey, onUndo, canUndo }) {
   );
 }
 
-function Timeline({ events }) {
-  const project = (h) => Math.max(0, Math.min(100, ((h - 6) / 18) * 100));
-  const heightFor = (e) => {
-    if (['activity', 'sleep'].includes(e.cat)) return 18;
-    const map = { S: 18, M: 30, L: 44 };
-    return map[e.size] || 24;
-  };
-  return (
-    <div className="timeline">
-      <div className="timeline-grid"/>
-      <div className="timeline-events">
-        {events.map((e) => (
-          <div key={e.id} className={`ev ${e.cat}`} style={{ left: `${project(e.hour)}%`, height: `${heightFor(e)}px` }} title={`${e.time} · ${e.label}`}/>
-        ))}
-      </div>
-      <div className="timeline-axis"><span>06</span><span>09</span><span>12</span><span>15</span><span>18</span><span>21</span><span>24</span></div>
-    </div>
-  );
-}
-
-// ====== Step drag card (S/M/L) ======
-function DragCard({ item, onTap, sizes = SIZES }) {
+function QuickCard({ item, onTap, sizes = SIZES }) {
   return (
     <button className={`tcard quick-card steps-${sizes.length} full-width cat-${item.cat}`} onClick={() => onTap?.(item, sizes)}>
       <div className="tcard-body">
@@ -513,38 +516,6 @@ function DragCard({ item, onTap, sizes = SIZES }) {
         <div className="size-ladder">
           {sizes.map((s) => <span key={s}>{s}</span>)}
         </div>
-      </div>
-    </button>
-  );
-}
-
-function TimerCard({ item, runningEvent, onStart, onStop, onLog }) {
-  const isRunning = runningEvent && runningEvent.sub === item.sub;
-  return (
-    <button
-      className={`tcard timer-card cat-${item.cat} sub-${item.sub} ${isRunning ? 'running' : ''}`}
-      onClick={() => {
-        if (isRunning) return onStop(runningEvent.id);
-        if (item.timer) return onStart(item);
-        return onLog({ sub: item.sub, label: item.label, cat: item.cat });
-      }}
-    >
-      <div className="tcard-body">
-        <div className="tcard-meta">
-          <span className={`cat-dot dot-${item.cat}`} />
-          <span className="sub">{item.cat}</span>
-        </div>
-        <div className="name">{item.label}</div>
-      </div>
-      <div className="tcard-right">
-        {isRunning ? (
-          <div className="timer-pop">
-            <span className="rec-dot" />
-            <span className="timer-val"><LiveTimer key={runningEvent.id} startTimestamp={runningEvent.timestamp}/></span>
-          </div>
-        ) : (
-          <div className="play-btn">{item.timer ? '▶' : '+'}</div>
-        )}
       </div>
     </button>
   );
@@ -582,7 +553,7 @@ function ContextAction({ item, runningEvent, onStart, onStop, onLog, icon }) {
 }
 
 function MoodCard({ item, onTap }) {
-  return <DragCard item={item} onTap={onTap} sizes={ADRENALINE_LEVELS} />;
+  return <QuickCard item={item} onTap={onTap} sizes={ADRENALINE_LEVELS} />;
 }
 
 function QuickLogSheet({ item, sizes, selectedDateKey, onClose, onLog }) {
@@ -663,23 +634,6 @@ function QuickLogSheet({ item, sizes, selectedDateKey, onClose, onLog }) {
   );
 }
 
-function CameraCard({ onOpenCamera, disabled }) {
-  return (
-    <button className="tcard action-card camera-card cat-food" onClick={onOpenCamera} disabled={disabled} aria-label="Otvoriť kameru">
-      <div className="tcard-body">
-        <div className="tcard-meta">
-          <span className="cat-dot dot-food" />
-          <span className="sub">camera</span>
-        </div>
-        <div className="name">Camera</div>
-      </div>
-      <div className="tcard-right">
-        <div className="camera-card-icon"><Icon.Cam/></div>
-      </div>
-    </button>
-  );
-}
-
 function LiveTimer({ startTimestamp }) {
   const [tick, setTick] = useState(0);
   useEffect(() => { const t = setInterval(() => setTick(x => x + 1), 1000); return () => clearInterval(t); }, []);
@@ -699,19 +653,59 @@ function DailyReview({ event, onSave }) {
     <div className="day-review-panel">
       <div className="day-review-head">
         <div>
-          <div className="day-review-kicker">Review dňa</div>
-          <div className="day-review-title">Kontext pre AI</div>
+          <div className="day-review-title">Day note</div>
         </div>
         <button className="day-review-save" disabled={!changed} onClick={() => onSave(draft)}>
-          Uložiť
+          ✎ Edit
         </button>
       </div>
       <textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         rows="3"
-        placeholder="Napr. celý deň behanie, nestíhal som logovať; zlý spánok; veľa stresu; jedlo odhadnuté narýchlo..."
+        placeholder="Slept badly · gym 17:00 · low ~16:00"
       />
+    </div>
+  );
+}
+
+function RecordsChart({ events }) {
+  const W = 320;
+  const H = 70;
+  const baseY = 52;
+  const topY = 10;
+  const maxCarbs = Math.max(60, ...events.map((e) => Number(e.carbs) || 0));
+  const carbsTotal = events.reduce((sum, e) => sum + (Number(e.carbs) || 0), 0);
+  const xFor = (hour) => Math.max(0, Math.min(W, ((Number(hour) || 0) / 24) * W));
+  const colorFor = (event) => {
+    if (event.cat === 'food') return 'var(--red)';
+    if (event.sub === 'beer' || event.cat === 'drink') return 'var(--drink)';
+    if (event.cat === 'activity') return 'var(--green)';
+    if (event.cat === 'mood') return 'var(--red)';
+    return 'var(--muted)';
+  };
+
+  return (
+    <div className="rec-chart-card">
+      <div className="rec-chart-head">
+        <span>Carbs across the day</span>
+        <b>{carbsTotal}<small>g</small></b>
+      </div>
+      <div className="rec-chart-graph">
+        <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-hidden="true">
+          <line x1="0" y1={baseY} x2={W} y2={baseY} stroke="rgba(15, 59, 53, 0.12)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
+          {events.map((event) => {
+            const x = xFor(event.hour);
+            const carbs = Number(event.carbs) || 0;
+            if (carbs <= 0) {
+              return <circle key={event.id} cx={x} cy={baseY} r="3.7" fill={colorFor(event)} />;
+            }
+            const height = Math.max(12, Math.min(baseY - topY, (carbs / maxCarbs) * (baseY - topY)));
+            return <rect key={event.id} x={x - 4} y={baseY - height} width="8" height={height} rx="4" fill={colorFor(event)} />;
+          })}
+        </svg>
+        <div className="rec-chart-axis"><span>6a</span><span>12p</span><span>6p</span><span>12a</span></div>
+      </div>
     </div>
   );
 }
@@ -781,9 +775,9 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
       </div>
       <div className="turbo-stack home-quick-stack">
         <div className="quick-log-grid">
-          <DragCard key={junkItem.sub} item={junkItem} onTap={openQuickSheet}/>
-          {drinkItems.map((item) => <DragCard key={item.sub} item={item} onTap={openQuickSheet}/>)}
-          <DragCard key={carbsItem.sub} item={carbsItem} onTap={openQuickSheet}/>
+          <QuickCard key={junkItem.sub} item={junkItem} onTap={openQuickSheet}/>
+          {drinkItems.map((item) => <QuickCard key={item.sub} item={item} onTap={openQuickSheet}/>)}
+          <QuickCard key={carbsItem.sub} item={carbsItem} onTap={openQuickSheet}/>
           <MoodCard item={adrenalineItem} onTap={openQuickSheet}/>
         </div>
       </div>
@@ -902,30 +896,50 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel
   );
 }
 
-function Records({ events, selectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const recordEvents = events.filter(e => e.cat !== 'review');
-  const visible = filter === 'all' ? recordEvents : recordEvents.filter(e => e.cat === filter);
+  const filters = [
+    { id: 'all', label: 'All', match: () => true },
+    { id: 'food', label: 'Food', match: (e) => e.cat === 'food' },
+    { id: 'beer', label: 'Beer', match: (e) => e.sub === 'beer' },
+    { id: 'junk', label: 'Junk', match: (e) => e.sub === 'junk' },
+    { id: 'adrenaline', label: 'Adrenalin', match: (e) => e.sub === 'adrenaline' },
+    { id: 'activity', label: 'Activity', match: (e) => e.cat === 'activity' },
+    { id: 'sick', label: 'Sick', match: (e) => e.sub === 'sick' }
+  ];
+  const activeFilter = filters.find((f) => f.id === filter) || filters[0];
+  const visible = recordEvents.filter(activeFilter.match);
   const sorted = [...visible].sort((a, b) => eventSortValue(b) - eventSortValue(a) || (b.createdAt || 0) - (a.createdAt || 0));
 
   return (
-    <div className="scroll">
+    <div className="scroll records-scroll">
       <div className="rec-head">
         <div className="rec-title-block">
-          <h2>Záznamy</h2>
-          <div className="rec-date-label">{formatRecordsDateLabel(selectedDateKey)}</div>
+          <h2>Records</h2>
+          <div className="rec-date-label">{formatRecordsSubtitle(selectedDateKey, recordEvents.length)}</div>
         </div>
-        <div className="rec-tools"><button className="rec-pill" onClick={onExportCsv}>CSV ↓</button></div>
+        <div className="rec-day-actions">
+          <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, -1))}>‹</button>
+          <button className="arr" onClick={() => setSelectedDateKey(addDaysToDateKey(selectedDateKey, 1))} disabled={dateKeyOffsetFromToday(selectedDateKey) >= 0}>›</button>
+        </div>
       </div>
+
+      <RecordsChart events={recordEvents} />
+
       <div className="rec-filter">
-        {['all','food','drink','activity','mood'].map((f) => (
-          <button key={f} className={`fchip filter-${f} ${filter === f ? 'on' : ''}`} onClick={() => setFilter(f)}>
-            {f === 'all' ? `Všetko · ${recordEvents.length}` : `${CAT_LABEL[f]} · ${recordEvents.filter(e=>e.cat===f).length}`}
+        {filters.map((f) => {
+          const count = recordEvents.filter(f.match).length;
+          return (
+          <button key={f.id} className={`fchip filter-${f.id} ${filter === f.id ? 'on' : ''}`} onClick={() => setFilter(f.id)}>
+            {f.label}{f.id === 'all' ? '' : ` · ${count}`}
           </button>
-        ))}
+          );
+        })}
       </div>
-      <div className="rec-rail">
+      <div className="rec-group-label">Today</div>
+      <div className="rec-list">
         {sorted.length === 0 && <div className="rec-empty">Žiadne záznamy</div>}
         {sorted.map((e) => {
           const timeStep = ['activity', 'sleep'].includes(e.cat) ? 5 : 10;
@@ -936,13 +950,14 @@ function Records({ events, selectedDateKey, reviewEvent, onSaveDayReview, onAdju
           <React.Fragment key={e.id}>
             <button className={`rec-row is-button ${e.cat}`} onClick={() => setOpenId(openId === e.id ? null : e.id)}>
               <span className="rec-time">{e.time}</span>
-              <span className={`cat-dot rec-row-dot dot-${e.cat}`} />
-              <div>
+              <span className={`rec-badge dot-${e.cat}`}>{recordIconFor(e)}</span>
+              <div className="rec-row-body">
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
                 <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.mealStartTime ? ` · jedlo ${e.mealStartTime}` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
               </div>
-              {e.size && <span className="rec-size">{e.size}</span>}
+              {e.carbs ? <span className="rec-carb">{e.carbs}g</span> : e.size && <span className="rec-size">{e.size}</span>}
               {e.running && <span className="rec-size run">RUN</span>}
+              <span className="rec-chev">›</span>
             </button>
             {openId === e.id && isActivityDetail && (
               <ActivityDetailEditor
@@ -991,6 +1006,7 @@ function Records({ events, selectedDateKey, reviewEvent, onSaveDayReview, onAdju
       <div className="records-review-slot">
         <DailyReview event={reviewEvent} onSave={(note) => onSaveDayReview(selectedDateKey, note)} />
       </div>
+      <button className="records-csv" onClick={onExportCsv}>⇧ Export CSV — all days</button>
       <div style={{height: 24}}/>
     </div>
   );
@@ -1268,7 +1284,9 @@ function App() {
 
   return (
     <Phone>
-      <Header selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} onUndo={undo} canUndo={history.length>0}/>
+      {view === 'home' && (
+        <Header selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} onUndo={undo} canUndo={history.length>0}/>
+      )}
 
       <div className={`view-main view-${view}`}>
         {view === 'home' && (
@@ -1289,7 +1307,7 @@ function App() {
             onDismissAiResult={() => setAiResult(null)}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
