@@ -31,7 +31,7 @@
   border-radius: 17px;
 }
 .camera-banner-main .camera-banner-title {
-  font-size: 22px;
+  font-size: 18px;
 }
 .camera-banner-main .camera-banner-hint {
   font-size: 13px;
@@ -66,7 +66,7 @@
   padding-bottom: 10px;
 }
 .home-section-title h3 {
-  font-size: 21px;
+  font-size: 18px;
 }
 .home-quick-stack {
   gap: 10px;
@@ -230,7 +230,7 @@
 
 .context-action-name {
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -275,7 +275,7 @@
 .quick-log-grid .tcard.quick-card.full-width .sub {
   margin-top: 4px;
   font-family: var(--display);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 500;
   line-height: 1;
   letter-spacing: 0;
@@ -284,44 +284,17 @@
 }
 
 .quick-log-grid .tcard.quick-card.full-width .name {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
   align-self: end;
   margin-top: 0;
-}
-
-.quick-log-grid .tcard.quick-card.full-width .tcard-right {
-  align-self: start;
-}
-
-.quick-log-grid .tcard.quick-card.full-width .size-ladder {
-  gap: 4px;
-  font-family: var(--display);
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: 0;
-  color: #8fb2aa;
-}
-
-.quick-log-grid .tcard.quick-card.full-width .size-ladder span {
-  display: grid;
-  place-items: center;
-  min-width: 27px;
-  height: 27px;
-  border-radius: 9px;
-  background: #eef8f2;
-}
-
-.quick-log-grid .tcard.quick-card.full-width .size-ladder span:nth-child(2) {
-  background: var(--ink);
-  color: #fff;
 }
 .tcard.quick-card {
   position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: 1fr;
   align-items: center;
   gap: 12px;
   padding: 14px 15px;
@@ -370,7 +343,7 @@
   background: #fff;
 }
 
-.tcard-body, .tcard-right { position: relative; z-index: 2; }
+.tcard-body { position: relative; z-index: 2; }
 
 .tcard-meta {
   display: flex;
@@ -805,21 +778,6 @@
     transform: translateY(0) scale(1);
   }
 }
-/* size ladder (rest state) */
-.size-ladder {
-  display: flex;
-  gap: 4px;
-  font-family: var(--mono);
-  font-size: 9px;
-  letter-spacing: 0.1em;
-  color: rgba(8, 119, 101, 0.3);
-}
-.tcard.quick-card.full-width .size-ladder {
-  font-size: 13px;
-  gap: 8px;
-  letter-spacing: 0.18em;
-}
-
 .rec-dot {
   width: 8px; height: 8px;
   border-radius: 50%;
@@ -846,7 +804,7 @@
 }
 .day-review-title {
   font-family: var(--display);
-  font-size: 28px;
+  font-size: 18px;
   font-weight: 850;
   line-height: 1;
   letter-spacing: -0.04em;
@@ -905,7 +863,7 @@
   color: var(--ink);
   box-shadow: var(--shadow-card);
   font-family: var(--display);
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 850;
   letter-spacing: -0.03em;
 }
@@ -1289,7 +1247,7 @@
 .rec-name {
   color: var(--ink);
   font-family: var(--display);
-  font-size: 21px;
+  font-size: 18px;
   font-weight: 800;
   line-height: 1.05;
   letter-spacing: -0.03em;
@@ -1298,7 +1256,7 @@
 .rec-meta {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 14px;
   line-height: 1.25;
 }
 
@@ -1306,7 +1264,7 @@
   flex: 0 0 auto;
   color: var(--ink);
   font-family: var(--display);
-  font-size: 22px;
+  font-size: 18px;
   font-weight: 850;
   letter-spacing: -0.03em;
 }

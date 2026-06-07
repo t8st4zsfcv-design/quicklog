@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.20';
+const APP_VERSION = 'V3.21';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -511,11 +511,6 @@ function QuickCard({ item, onTap, sizes = SIZES }) {
         </div>
         <div className="name">{item.label}</div>
         <div className="sub">{quickSubtitleFor(item)}</div>
-      </div>
-      <div className="tcard-right">
-        <div className="size-ladder">
-          {sizes.map((s) => <span key={s}>{s}</span>)}
-        </div>
       </div>
     </button>
   );
