@@ -539,6 +539,26 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.sheet-size-row:not(.sizes-2) .sheet-size {
+  aspect-ratio: 1;
+  min-height: 0;
+}
+
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(1) {
+  border-color: #d8ebe4;
+  background: #eef8f3;
+}
+
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(2) {
+  border-color: #f4dfcf;
+  background: #fff2e8;
+}
+
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(3) {
+  border-color: #ffd3c8;
+  background: #ffe6df;
+}
+
 .sheet-size {
   display: grid;
   grid-template-rows: auto auto;
@@ -562,9 +582,10 @@
 
 .sheet-size span {
   color: var(--muted);
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1;
+  opacity: 0.72;
 }
 
 .sheet-size.selected {
@@ -573,8 +594,24 @@
   color: #fff;
 }
 
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(1).selected {
+  border-color: #45ad92;
+  background: #45ad92;
+}
+
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(2).selected {
+  border-color: #f2a267;
+  background: #f2a267;
+}
+
+.sheet-size-row:not(.sizes-2) .sheet-size:nth-child(3).selected {
+  border-color: var(--red);
+  background: var(--red);
+}
+
 .sheet-size.selected span {
   color: #fff;
+  opacity: 0.82;
 }
 
 .sheet-time {
@@ -1140,23 +1177,24 @@
 
 .fchip {
   flex: 0 0 auto;
-  min-height: 44px;
-  padding: 0 18px;
-  border: 0;
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid rgba(8, 119, 101, 0.07);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.78);
-  color: var(--muted);
-  box-shadow: var(--shadow-card);
+  background: rgba(255, 255, 255, 0.32);
+  color: rgba(15, 59, 53, 0.46);
+  box-shadow: none;
   font-family: var(--display);
-  font-size: 16px;
-  font-weight: 750;
+  font-size: 13px;
+  font-weight: 700;
   letter-spacing: 0;
   white-space: nowrap;
 }
 
 .fchip.on {
-  background: var(--ink);
-  color: #fff;
+  border-color: rgba(8, 119, 101, 0.12);
+  background: rgba(8, 119, 101, 0.1);
+  color: rgba(6, 79, 69, 0.72);
 }
 
 .rec-group-label {
