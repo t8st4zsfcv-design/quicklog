@@ -434,7 +434,7 @@ button {
   background: transparent;
   color: rgba(6, 79, 69, 0.72);
   font-weight: 700;
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .nav-pill button.on {
@@ -443,8 +443,8 @@ button {
 }
 
 .nav-pill svg {
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
 }
 
 .toast {

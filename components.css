@@ -98,7 +98,7 @@
 
 .context-toggle-row {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: 1fr;
   gap: 12px;
 }
 
@@ -815,7 +815,7 @@
   padding: 8px 0;
   background: transparent;
   color: var(--red);
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
 }
 .day-review-save:disabled {
@@ -832,7 +832,7 @@
   box-shadow: none;
   color: var(--ink);
   font: inherit;
-  font-size: 23px;
+  font-size: 18px;
   line-height: 1.35;
   outline: none;
 }
@@ -1041,7 +1041,7 @@
 .rec-head h2 {
   margin: 0 0 4px;
   font-family: var(--display);
-  font-size: 38px;
+  font-size: 18px;
   font-weight: 850;
   line-height: 1;
   letter-spacing: -0.05em;
@@ -1051,7 +1051,7 @@
 }
 .rec-date-label {
   color: var(--muted);
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -1088,13 +1088,13 @@
   justify-content: space-between;
   gap: 16px;
   color: var(--muted);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 750;
 }
 
 .rec-chart-head b {
   color: var(--ink);
-  font-size: 17px;
+  font-size: 16px;
 }
 
 .rec-chart-head small {
@@ -1148,7 +1148,7 @@
   color: var(--muted);
   box-shadow: var(--shadow-card);
   font-family: var(--display);
-  font-size: 17px;
+  font-size: 16px;
   font-weight: 750;
   letter-spacing: 0;
   white-space: nowrap;
@@ -1162,7 +1162,7 @@
 .rec-group-label {
   margin: 0 20px 16px;
   color: #98b4ae;
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 850;
   letter-spacing: 0.11em;
   text-transform: uppercase;
@@ -1215,7 +1215,7 @@
 .rec-time {
   flex: 0 0 55px;
   color: var(--muted);
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
 }
