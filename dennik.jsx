@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.23';
+const APP_VERSION = 'V3.24';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },

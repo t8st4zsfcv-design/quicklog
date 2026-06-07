@@ -489,14 +489,14 @@
 .sheet-icon {
   display: grid;
   place-items: center;
-  width: 72px;
-  height: 72px;
-  border-radius: 22px;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
 }
 
 .sheet-icon svg {
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
 }
 
 .sheet-icon.dot-food {
@@ -516,16 +516,16 @@
 
 .sheet-title {
   font-family: var(--display);
-  font-size: 34px;
+  font-size: 20px;
   font-weight: 850;
   line-height: 1;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.03em;
 }
 
 .sheet-desc {
-  margin-top: 6px;
+  margin-top: 4px;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 14px;
   font-weight: 500;
 }
 
@@ -555,14 +555,14 @@
 
 .sheet-size b {
   font-family: var(--display);
-  font-size: 38px;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: -0.04em;
 }
 
 .sheet-size span {
   color: var(--muted);
-  font-size: 19px;
+  font-size: 15px;
   font-weight: 700;
   line-height: 1;
 }
@@ -587,13 +587,13 @@
   border-radius: 18px;
   background: #f1f8f4;
   color: var(--muted);
-  font-size: 18px;
+  font-size: 16px;
   font-family: inherit;
 }
 
 .sheet-time b {
   color: var(--ink);
-  font-size: 22px;
+  font-size: 18px;
 }
 
 .native-sheet-time {
@@ -618,7 +618,7 @@
   background: var(--red);
   color: #fff;
   font-family: var(--display);
-  font-size: 23px;
+  font-size: 18px;
   font-weight: 800;
   box-shadow: 0 16px 34px rgba(255, 125, 99, 0.26);
 }
@@ -634,11 +634,11 @@
 }
 
 .adrenaline-sheet .sheet-title {
-  font-size: 38px;
+  font-size: 20px;
 }
 
 .adrenaline-sheet .sheet-desc {
-  font-size: 22px;
+  font-size: 14px;
 }
 
 .adrenaline-sheet .sheet-size-row.sizes-2 {
@@ -653,11 +653,11 @@
 }
 
 .adrenaline-sheet .sheet-size b {
-  font-size: 28px;
+  font-size: 20px;
 }
 
 .adrenaline-sheet .sheet-size span {
-  font-size: 20px;
+  font-size: 14px;
   font-weight: 500;
 }
 
