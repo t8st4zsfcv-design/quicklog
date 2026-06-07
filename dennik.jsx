@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.22';
+const APP_VERSION = 'V3.23';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -943,8 +943,10 @@ function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onS
           return (
           <React.Fragment key={e.id}>
             <button className={`rec-row is-button ${e.cat}`} onClick={() => setOpenId(openId === e.id ? null : e.id)}>
-              <span className="rec-time">{e.time}</span>
-              <span className={`rec-badge dot-${e.cat}`}>{recordIconFor(e)}</span>
+              <span className="rec-leading">
+                <span className={`rec-badge dot-${e.cat}`}>{recordIconFor(e)}</span>
+                <span className="rec-time">{e.time}</span>
+              </span>
               <div className="rec-row-body">
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
                 <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.mealStartTime ? ` · jedlo ${e.mealStartTime}` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
