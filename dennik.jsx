@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.25';
+const APP_VERSION = 'V3.26';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -668,6 +668,7 @@ function RecordsChart({ events }) {
   const H = 70;
   const baseY = 52;
   const topY = 10;
+  const durationSubs = new Set(['gym', 'hard_work', 'exercise']);
   const maxCarbs = Math.max(60, ...events.map((e) => Number(e.carbs) || 0));
   const carbsTotal = events.reduce((sum, e) => sum + (Number(e.carbs) || 0), 0);
   const xFor = (hour) => Math.max(0, Math.min(W, ((Number(hour) || 0) / 24) * W));
@@ -691,6 +692,26 @@ function RecordsChart({ events }) {
           {events.map((event) => {
             const x = xFor(event.hour);
             const carbs = Number(event.carbs) || 0;
+            if (event.cat === 'activity' && durationSubs.has(event.sub)) {
+              const startTimestamp = eventSortValue(event);
+              const durationMinutes = event.running
+                ? Math.max(1, (Date.now() - startTimestamp) / 60000)
+                : Math.max(1, Number(event.duration) || 1);
+              const endX = xFor((Number(event.hour) || 0) + (durationMinutes / 60));
+              return (
+                <line
+                  key={event.id}
+                  x1={x}
+                  y1={baseY}
+                  x2={Math.max(x + 3, endX)}
+                  y2={baseY}
+                  stroke="#5d9fda"
+                  strokeWidth="7"
+                  strokeLinecap="round"
+                  vectorEffect="non-scaling-stroke"
+                />
+              );
+            }
             if (carbs <= 0) {
               return <circle key={event.id} cx={x} cy={baseY} r="3.7" fill={colorFor(event)} />;
             }

@@ -82,6 +82,21 @@
   padding: 16px;
   border-radius: 25px;
 }
+
+.quick-log-grid .tcard.quick-card.cat-food {
+  border-color: rgba(255, 125, 99, 0.16);
+  background: linear-gradient(145deg, #fff8f4 0%, #ffffff 76%);
+}
+
+.quick-log-grid .tcard.quick-card.cat-drink {
+  border-color: rgba(155, 214, 74, 0.2);
+  background: linear-gradient(145deg, #f5fbe9 0%, #ffffff 76%);
+}
+
+.quick-log-grid .tcard.quick-card.cat-mood {
+  border-color: rgba(24, 169, 142, 0.16);
+  background: linear-gradient(145deg, #effaf6 0%, #ffffff 76%);
+}
 .quick-log-grid .tcard.quick-card.full-width:first-child {
   grid-column: auto;
   min-height: 142px;
@@ -110,9 +125,9 @@
   min-width: 0;
   min-height: 72px;
   padding: 10px 10px;
-  border: 1px solid var(--hair-soft);
+  border: 1px solid rgba(93, 159, 218, 0.16);
   border-radius: 24px;
-  background: var(--paper);
+  background: linear-gradient(145deg, #f2f8fd 0%, #ffffff 80%);
   color: var(--ink);
   box-shadow: var(--shadow-card);
   font-family: inherit;
@@ -130,6 +145,11 @@
   place-items: center;
   background: #eef9f3;
   color: #168f7d;
+}
+
+.context-toggle .context-icon {
+  background: #e5f1fb;
+  color: #4e8fc8;
 }
 
 .context-icon {
@@ -210,6 +230,31 @@
   box-shadow: var(--shadow-card);
   font-family: inherit;
   text-align: center;
+}
+
+.context-action:nth-child(1) {
+  border-color: rgba(24, 169, 142, 0.17);
+  background: linear-gradient(145deg, #eefaf6 0%, #ffffff 80%);
+}
+
+.context-action:nth-child(2) {
+  border-color: rgba(93, 159, 218, 0.16);
+  background: linear-gradient(145deg, #f1f7fc 0%, #ffffff 80%);
+}
+
+.context-action:nth-child(3) {
+  border-color: rgba(255, 125, 99, 0.17);
+  background: linear-gradient(145deg, #fff3ef 0%, #ffffff 80%);
+}
+
+.context-action:nth-child(2) .context-action-icon {
+  background: #e5f1fb;
+  color: #4e8fc8;
+}
+
+.context-action:nth-child(3) .context-action-icon {
+  background: #ffe9e2;
+  color: var(--red);
 }
 
 .context-action.running {
@@ -1061,7 +1106,7 @@
 
 /* Records screen — compact timeline list */
 .records-scroll {
-  padding-top: 24px;
+  padding-top: calc(24px + env(safe-area-inset-top));
   padding-bottom: 150px;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
