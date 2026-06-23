@@ -963,6 +963,17 @@
   display: grid;
   gap: 12px;
 }
+
+.rec-detail.detail-meds {
+  border-color: rgba(93, 159, 218, 0.22);
+  background: linear-gradient(145deg, #edf7fd 0%, rgba(255, 255, 255, 0.94) 76%);
+  box-shadow: 0 10px 30px rgba(70, 128, 179, 0.1);
+}
+
+.rec-detail.detail-meds > .row:first-child {
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(93, 159, 218, 0.14);
+}
 .rec-detail .row {
   display: flex;
   align-items: center;
@@ -1039,6 +1050,58 @@
   color: transparent;
   background: transparent;
 }
+
+.meds-interval-editor {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.meds-boundaries {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.meds-boundary {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px;
+  border: 1px solid rgba(63, 133, 194, 0.2);
+  border-radius: 16px;
+  background: #e4f2fb;
+  color: #174d70;
+  overflow: hidden;
+  box-shadow: 0 5px 15px rgba(70, 128, 179, 0.08);
+}
+
+.meds-boundary:last-child {
+  border-color: rgba(24, 169, 142, 0.2);
+  background: #e8f7f2;
+  color: #126c5e;
+}
+
+.meds-boundary > span {
+  font-family: var(--display);
+  font-size: 16px;
+  font-weight: 800;
+  opacity: 0.86;
+}
+
+.meds-boundary input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  opacity: 0.001;
+  cursor: pointer;
+  font-size: 16px;
+}
+
 .rec-detail .actions {
   display: grid;
   grid-template-columns: 1fr auto;

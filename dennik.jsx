@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.27';
+const APP_VERSION = 'V3.28';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -93,6 +93,26 @@ function formatLocalTimestamp(date = new Date()) {
   const m = String(date.getMinutes()).padStart(2, '0');
   const s = String(date.getSeconds()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T${h}:${m}:${s}`;
+}
+
+function formatDateTimeInput(timestamp) {
+  if (!Number.isFinite(timestamp)) return '';
+  return formatLocalTimestamp(new Date(timestamp)).slice(0, 16);
+}
+
+function formatDurationDaysHours(startTimestamp, endTimestamp) {
+  const totalHours = Math.max(0, Math.floor((endTimestamp - startTimestamp) / 3600000));
+  const days = Math.floor(totalHours / 24);
+  const hours = totalHours % 24;
+  return `${days} d ${hours} h`;
+}
+
+function timestampFromDateTimeInput(value) {
+  const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/);
+  if (!match) return null;
+  const [, yyyy, mm, dd, hh, min] = match.map(Number);
+  const date = new Date(yyyy, mm - 1, dd, hh, min, 0, 0);
+  return Number.isFinite(date.getTime()) ? date.getTime() : null;
 }
 
 function timestampFromDateKeyAndHour(dateKey, hour) {
@@ -267,7 +287,7 @@ function csvCell(value) {
 }
 
 function eventsToCsv(events) {
-  const header = ['timestamp', 'dateKey', 'time', 'start_time', 'meal_start_time', 'meal_start_timestamp', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'activityDetail', 'source'];
+  const header = ['timestamp', 'dateKey', 'startDateKey', 'endDateKey', 'time', 'start_time', 'meal_start_time', 'meal_start_timestamp', 'end_time', 'start_timestamp', 'end_timestamp', 'category', 'subtype', 'label', 'size', 'intensity', 'duration_min', 'carbs_g', 'confidence', 'note', 'activityDetail', 'source'];
   const rows = events
     .slice()
     .sort((a, b) => eventSortValue(b) - eventSortValue(a))
@@ -275,16 +295,19 @@ function eventsToCsv(events) {
       const startTimestamp = eventSortValue(event);
       const startDate = new Date(startTimestamp);
       const startHour = startDate.getHours() + (startDate.getMinutes() / 60);
-      const duration = event.running && event.sub === 'sick'
+      const duration = event.running && ['sick', 'meds'].includes(event.sub)
         ? Math.max(0, Math.round((Date.now() - startTimestamp) / 60000))
         : event.duration;
       const durationHours = duration ? duration / 60 : 0;
-      const endTimestamp = (['activity', 'sleep'].includes(event.cat) || event.sub === 'sick') && duration ? startTimestamp + (durationHours * 60 * 60 * 1000) : '';
+      const calculatedEndTimestamp = (['activity', 'sleep'].includes(event.cat) || event.sub === 'sick') && duration ? startTimestamp + (durationHours * 60 * 60 * 1000) : '';
+      const endTimestamp = Number.isFinite(event.endTimestamp) ? event.endTimestamp : calculatedEndTimestamp;
       const date = eventDateParts(event, startTimestamp);
       const endDate = endTimestamp === '' ? null : eventDateParts(event, endTimestamp);
       return [
         date.iso,
         date.day,
+        event.startDateKey || date.day,
+        event.endDateKey || endDate?.day || '',
         event.time,
         formatHour(startHour),
         event.mealStartTime || '',
@@ -725,7 +748,7 @@ function RecordsChart({ events }) {
   );
 }
 
-function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
+function Home({ events, selectedDateKey, runningEvent, runningMedsEvent, runningSickEvent, onLogSize, onStartTimer, onStopTimer, onStartMeds, onStopMeds, onStartSick, onStopSick, onRefresh, onOpenCamera, cameraBusy, aiResult, onDismissAiResult }) {
   const [quickSheet, setQuickSheet] = useState(null);
   const featuredDrink = ['beer'];
 
@@ -739,7 +762,7 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
   ];
   const contextActions = [
     { ...TURBO.find(t => t.sub === 'cannula'), icon: <Icon.Cannula/> },
-    { ...TURBO.find(t => t.sub === 'meds'), icon: <Icon.Meds/> },
+    { ...TURBO.find(t => t.sub === 'meds'), timer: true, icon: <Icon.Meds/> },
     { sub: 'sick', cat: 'mood', label: 'Sick', timer: true, icon: <Icon.Thermo/> }
   ];
   const logEvents = events.filter(e => e.cat !== 'review');
@@ -748,8 +771,8 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
     .filter(e => e.cat === 'food' || (e.cat === 'drink' && e.sub === 'beer'))
     .reduce((s, e) => s + (e.carbs || 0), 0);
   const activeToday = logEvents.some(e => e.running) ? 1 : 0;
-  const activeLabel = runningSickEvent ? 'Sick' : runningEvent?.label || 'Resting';
-  const activeHint = runningSickEvent ? 'On now' : runningEvent ? 'On now' : 'No active state';
+  const activeLabel = runningSickEvent ? 'Sick' : runningMedsEvent ? 'Meds' : runningEvent?.label || 'Resting';
+  const activeHint = runningSickEvent || runningMedsEvent || runningEvent ? 'On now' : 'No active state';
   const ringPct = Math.min(100, Math.round((carbs / 180) * 100));
   const openQuickSheet = (item, sizes = SIZES) => setQuickSheet({ item, sizes });
 
@@ -822,9 +845,9 @@ function Home({ events, selectedDateKey, runningEvent, runningSickEvent, onLogSi
             <ContextAction
               key={item.sub}
               item={item}
-              runningEvent={item.sub === 'sick' ? runningSickEvent : runningEvent}
-              onStart={item.sub === 'sick' ? onStartSick : onStartTimer}
-              onStop={item.sub === 'sick' ? onStopSick : onStopTimer}
+              runningEvent={item.sub === 'sick' ? runningSickEvent : item.sub === 'meds' ? runningMedsEvent : runningEvent}
+              onStart={item.sub === 'sick' ? onStartSick : item.sub === 'meds' ? onStartMeds : onStartTimer}
+              onStop={item.sub === 'sick' ? onStopSick : item.sub === 'meds' ? onStopMeds : onStopTimer}
               onLog={onLogSize}
               icon={item.icon}
             />
@@ -885,19 +908,60 @@ function MealStartAdjuster({ event, onAdjustMealStartTime, onSetMealStartTime })
   );
 }
 
-function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel, onDelete }) {
+function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, onSetMedsEnd, onSave, onCancel, onDelete }) {
   const [draft, setDraft] = useState(event.activityDetail || '');
+  const [, setDurationTick] = useState(0);
   const isMeds = event.sub === 'meds';
   const label = isMeds ? 'Medication / substance detail' : 'Cannula detail / site / note';
   const placeholder = isMeds ? 'liek, dávka, doplnok, typ medikamentu…' : 'miesto výmeny, leakage, bolesť, krv…';
+  useEffect(() => {
+    if (!isMeds || !event.running) return undefined;
+    const timer = setInterval(() => setDurationTick(value => value + 1), 60000);
+    return () => clearInterval(timer);
+  }, [isMeds, event.running]);
+  const medsStartTimestamp = eventSortValue(event);
+  const medsEndTimestamp = Math.max(
+    medsStartTimestamp,
+    Number.isFinite(event.endTimestamp) ? event.endTimestamp : Date.now()
+  );
+  const medsDuration = formatDurationDaysHours(
+    medsStartTimestamp,
+    event.running ? Date.now() : medsEndTimestamp
+  );
 
   return (
     <div className={`rec-detail detail-activity detail-${event.sub}`}>
       <div className="row">
         <span className="lbl">Detail</span>
-        <span className="val">{event.label} · {event.time}</span>
+        <span className="val">{isMeds ? medsDuration : `${event.label} · ${event.time}`}</span>
       </div>
-      <TimeAdjuster event={event} step={10} onAdjustTime={onAdjustTime} onSetTime={onSetTime} />
+      {isMeds && (
+        <div className="meds-interval-editor">
+          <div className="lbl">Interval</div>
+          <div className="meds-boundaries">
+            <label className="meds-boundary">
+              <span>Začiatok</span>
+              <input
+                aria-label="Vybrať začiatok Meds"
+                type="datetime-local"
+                value={formatDateTimeInput(medsStartTimestamp)}
+                onChange={(e) => onSetMedsStart(event.id, e.target.value)}
+              />
+            </label>
+            <label className="meds-boundary">
+              <span>Koniec</span>
+              <input
+                aria-label="Vybrať koniec Meds"
+                type="datetime-local"
+                min={formatDateTimeInput(medsStartTimestamp)}
+                value={formatDateTimeInput(medsEndTimestamp)}
+                onChange={(e) => onSetMedsEnd(event.id, e.target.value)}
+              />
+            </label>
+          </div>
+        </div>
+      )}
+      {!isMeds && <TimeAdjuster event={event} step={10} onAdjustTime={onAdjustTime} onSetTime={onSetTime} />}
       <label className="activity-detail-field">
         <span>{label}</span>
         <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} rows="3" />
@@ -911,7 +975,7 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel
   );
 }
 
-function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onSetMedsStart, onSetMedsEnd, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const recordEvents = events.filter(e => e.cat !== 'review');
@@ -970,7 +1034,15 @@ function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onS
               </span>
               <div className="rec-row-body">
                 <div className="rec-name">{e.label}{e.running && ' · beží'}</div>
-                <div className="rec-meta">{e.cat}/{e.sub}{e.carbs ? ` · ${e.carbs}g` : ''}{e.mealStartTime ? ` · jedlo ${e.mealStartTime}` : ''}{e.duration ? ` · ${e.duration}m` : ''}{e.note ? ` · ${e.note}` : ''}{e.activityDetail ? ` · ${e.activityDetail}` : ''}</div>
+                <div className="rec-meta">
+                  {e.cat}/{e.sub}
+                  {e.sub === 'meds' ? ` · ${e.startDateKey || e.dateKey} → ${e.running ? 'ON' : e.endDateKey || '—'}` : ''}
+                  {e.carbs ? ` · ${e.carbs}g` : ''}
+                  {e.mealStartTime ? ` · jedlo ${e.mealStartTime}` : ''}
+                  {e.duration ? ` · ${e.duration}m` : ''}
+                  {e.note ? ` · ${e.note}` : ''}
+                  {e.activityDetail ? ` · ${e.activityDetail}` : ''}
+                </div>
               </div>
               {e.carbs ? <span className="rec-carb">{e.carbs}g</span> : e.size && <span className="rec-size">{e.size}</span>}
               {e.running && <span className="rec-size run">RUN</span>}
@@ -981,6 +1053,8 @@ function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onS
                 event={e}
                 onAdjustTime={onAdjustTime}
                 onSetTime={onSetTime}
+                onSetMedsStart={onSetMedsStart}
+                onSetMedsEnd={onSetMedsEnd}
                 onSave={(id, detail) => { onActivityDetail(id, detail); setOpenId(null); }}
                 onCancel={() => setOpenId(null)}
                 onDelete={(id) => { onDelete(id); setOpenId(null); }}
@@ -1047,7 +1121,8 @@ function App() {
   const [selectedDateKey, setSelectedDateKey] = useState(formatLocalDateKey);
   const cameraInputRef = useRef(null);
 
-  const runningEvent = events.find(e => e.running && e.cat === 'activity');
+  const runningEvent = events.find(e => e.running && e.cat === 'activity' && e.sub !== 'meds');
+  const runningMedsEvent = events.find(e => e.running && e.cat === 'activity' && e.sub === 'meds');
   const runningSickEvent = events.find(e => e.running && e.cat === 'mood' && e.sub === 'sick');
   const selectedEvents = events.filter(e => e.dateKey === selectedDateKey && e.cat !== 'sleep');
   const selectedReviewEvent = selectedEvents.find(e => e.cat === 'review' && e.sub === 'day');
@@ -1112,6 +1187,43 @@ function App() {
     }));
     showToast(<>Timer zastavený</>);
   };
+  const onStartMeds = (item) => {
+    if (runningMedsEvent) return;
+    const id = Math.max(...events.map(e=>e.id), 0) + 1;
+    const clock = currentClock();
+    const evt = {
+      id,
+      ...clock,
+      createdAt: Date.now(),
+      sub: item.sub,
+      label: item.label,
+      cat: item.cat,
+      running: true,
+      startDateKey: clock.dateKey
+    };
+    setHistory(h => [...h, { kind: 'add', id }]);
+    setEvents(es => [...es, evt]);
+    showToast(<><b>Meds</b> zapnuté</>);
+  };
+  const onStopMeds = (id) => {
+    const endClock = currentClock();
+    setEvents(es => es.map(e => {
+      if (e.id !== id || e.sub !== 'meds') return e;
+      const startTimestamp = eventSortValue(e);
+      const duration = Math.max(0, Math.round((endClock.timestamp - startTimestamp) / 60000));
+      return {
+        ...e,
+        running: false,
+        ended: true,
+        duration,
+        endTimestamp: endClock.timestamp,
+        endTimestampLocal: endClock.timestampLocal,
+        endDateKey: endClock.dateKey,
+        endTime: endClock.time
+      };
+    }));
+    showToast(<>Meds vypnuté</>);
+  };
   const onStartSick = () => {
     const id = Math.max(...events.map(e=>e.id), 0) + 1;
     const evt = { id, ...currentClock(), createdAt: Date.now(), sub: 'sick', label: 'Sick', cat: 'mood', running: true };
@@ -1144,6 +1256,55 @@ function App() {
       const timestamp = timestampFromDateKeyAndHour(e.dateKey, newHour);
       return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
     }));
+  };
+  const onSetMedsStart = (id, dateTimeValue) => {
+    const timestamp = timestampFromDateTimeInput(dateTimeValue);
+    if (!Number.isFinite(timestamp)) return;
+    setEvents(es => es.map(e => {
+      if (e.id !== id || e.sub !== 'meds') return e;
+      const date = new Date(timestamp);
+      const dateKey = formatLocalDateKey(date);
+      const hour = date.getHours() + (date.getMinutes() / 60);
+      const endTimestamp = Number.isFinite(e.endTimestamp) ? Math.max(timestamp, e.endTimestamp) : undefined;
+      const duration = Number.isFinite(endTimestamp) ? Math.max(0, Math.round((endTimestamp - timestamp) / 60000)) : e.duration;
+      const endDate = Number.isFinite(endTimestamp) ? new Date(endTimestamp) : null;
+      return {
+        ...e,
+        timestamp,
+        timestampLocal: formatLocalTimestamp(date),
+        dateKey,
+        startDateKey: dateKey,
+        time: formatHour(hour),
+        hour,
+        endTimestamp,
+        endTimestampLocal: endDate ? formatLocalTimestamp(endDate) : e.endTimestampLocal,
+        endDateKey: endDate ? formatLocalDateKey(endDate) : e.endDateKey,
+        endTime: endDate ? formatHour(endDate.getHours() + (endDate.getMinutes() / 60)) : e.endTime,
+        duration
+      };
+    }));
+    showToast(<>Začiatok Meds uložený</>);
+  };
+  const onSetMedsEnd = (id, dateTimeValue) => {
+    const requestedTimestamp = timestampFromDateTimeInput(dateTimeValue);
+    if (!Number.isFinite(requestedTimestamp)) return;
+    setEvents(es => es.map(e => {
+      if (e.id !== id || e.sub !== 'meds') return e;
+      const startTimestamp = eventSortValue(e);
+      const endTimestamp = Math.max(startTimestamp, requestedTimestamp);
+      const endDate = new Date(endTimestamp);
+      return {
+        ...e,
+        running: false,
+        ended: true,
+        duration: Math.max(0, Math.round((endTimestamp - startTimestamp) / 60000)),
+        endTimestamp,
+        endTimestampLocal: formatLocalTimestamp(endDate),
+        endDateKey: formatLocalDateKey(endDate),
+        endTime: formatHour(endDate.getHours() + (endDate.getMinutes() / 60))
+      };
+    }));
+    showToast(<>Koniec Meds uložený</>);
   };
   const setMealStartForEvent = (event, mealStartHour) => {
     const timestamp = timestampFromDateKeyAndHour(event.dateKey, mealStartHour);
@@ -1311,10 +1472,13 @@ function App() {
             events={selectedEvents}
             selectedDateKey={selectedDateKey}
             runningEvent={runningEvent}
+            runningMedsEvent={runningMedsEvent}
             runningSickEvent={runningSickEvent}
             onLogSize={onLogSize}
             onStartTimer={onStartTimer}
             onStopTimer={onStopTimer}
+            onStartMeds={onStartMeds}
+            onStopMeds={onStopMeds}
             onStartSick={onStartSick}
             onStopSick={onStopSick}
             onRefresh={refreshApp}
@@ -1324,7 +1488,7 @@ function App() {
             onDismissAiResult={() => setAiResult(null)}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onSetMedsStart={onSetMedsStart} onSetMedsEnd={onSetMedsEnd} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
