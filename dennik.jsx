@@ -19,7 +19,7 @@ const TURBO = [
 const SIZES = ['S', 'M', 'L'];
 const ADRENALINE_LEVELS = ['M', 'L'];
 const CAT_LABEL = { food: 'jedlo', drink: 'pitie', activity: 'aktivita', mood: 'nálada', review: 'review' };
-const APP_VERSION = 'V3.28';
+const APP_VERSION = 'V3.30';
 const AI_IMAGE_TARGET_BYTES = 4_200_000;
 const AI_IMAGE_STEPS = [
   { maxSide: 1600, quality: 0.82 },
@@ -686,15 +686,22 @@ function DailyReview({ event, onSave }) {
   );
 }
 
-function RecordsChart({ events }) {
+function RecordsChart({ events, selectedDateKey }) {
   const W = 320;
   const H = 70;
   const baseY = 52;
   const topY = 10;
+  const medsY = baseY - 9;
+  const dayStartTimestamp = localDateFromKey(selectedDateKey).getTime();
+  const dayEndTimestamp = localDateFromKey(addDaysToDateKey(selectedDateKey, 1)).getTime();
   const durationSubs = new Set(['gym', 'hard_work', 'exercise']);
   const maxCarbs = Math.max(60, ...events.map((e) => Number(e.carbs) || 0));
   const carbsTotal = events.reduce((sum, e) => sum + (Number(e.carbs) || 0), 0);
   const xFor = (hour) => Math.max(0, Math.min(W, ((Number(hour) || 0) / 24) * W));
+  const xForTimestamp = (timestamp) => Math.max(
+    0,
+    Math.min(W, ((timestamp - dayStartTimestamp) / (dayEndTimestamp - dayStartTimestamp)) * W)
+  );
   const colorFor = (event) => {
     if (event.cat === 'food') return 'var(--red)';
     if (event.sub === 'beer' || event.cat === 'drink') return 'var(--drink)';
@@ -715,6 +722,40 @@ function RecordsChart({ events }) {
           {events.map((event) => {
             const x = xFor(event.hour);
             const carbs = Number(event.carbs) || 0;
+            if (event.sub === 'meds') {
+              const startTimestamp = eventSortValue(event);
+              const fallbackEnd = Number(event.duration) > 0
+                ? startTimestamp + (Number(event.duration) * 60000)
+                : startTimestamp;
+              const endTimestamp = event.running
+                ? Date.now()
+                : Number.isFinite(event.endTimestamp)
+                  ? event.endTimestamp
+                  : fallbackEnd;
+              const segmentStart = Math.max(startTimestamp, dayStartTimestamp);
+              const segmentEnd = Math.min(Math.max(startTimestamp, endTimestamp), dayEndTimestamp);
+              if (segmentEnd < dayStartTimestamp || segmentStart > dayEndTimestamp) return null;
+              const startX = xForTimestamp(segmentStart);
+              const endX = xForTimestamp(segmentEnd);
+              const startsToday = startTimestamp >= dayStartTimestamp && startTimestamp < dayEndTimestamp;
+              const endsToday = !event.running && endTimestamp > dayStartTimestamp && endTimestamp <= dayEndTimestamp;
+              return (
+                <g key={event.id}>
+                  <line
+                    x1={startX}
+                    y1={medsY}
+                    x2={Math.max(startX + 3, endX)}
+                    y2={medsY}
+                    stroke="#668bd8"
+                    strokeWidth="6"
+                    strokeLinecap="round"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                  {startsToday && <circle cx={startX} cy={medsY} r="4" fill="#456fc5" />}
+                  {endsToday && <circle cx={endX} cy={medsY} r="4" fill="#456fc5" />}
+                </g>
+              );
+            }
             if (event.cat === 'activity' && durationSubs.has(event.sub)) {
               const startTimestamp = eventSortValue(event);
               const durationMinutes = event.running
@@ -908,8 +949,12 @@ function MealStartAdjuster({ event, onAdjustMealStartTime, onSetMealStartTime })
   );
 }
 
-function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, onSetMedsEnd, onSave, onCancel, onDelete }) {
+function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSave, onCancel, onDelete }) {
   const [draft, setDraft] = useState(event.activityDetail || '');
+  const [startDraft, setStartDraft] = useState(() => formatDateTimeInput(eventSortValue(event)));
+  const [endDraft, setEndDraft] = useState(() => formatDateTimeInput(
+    Number.isFinite(event.endTimestamp) ? event.endTimestamp : null
+  ));
   const [, setDurationTick] = useState(0);
   const isMeds = event.sub === 'meds';
   const label = isMeds ? 'Medication / substance detail' : 'Cannula detail / site / note';
@@ -919,10 +964,17 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, 
     const timer = setInterval(() => setDurationTick(value => value + 1), 60000);
     return () => clearInterval(timer);
   }, [isMeds, event.running]);
-  const medsStartTimestamp = eventSortValue(event);
+  const savedStartTimestamp = eventSortValue(event);
+  const draftStartTimestamp = timestampFromDateTimeInput(startDraft);
+  const medsStartTimestamp = Number.isFinite(draftStartTimestamp) ? draftStartTimestamp : savedStartTimestamp;
+  const draftEndTimestamp = timestampFromDateTimeInput(endDraft);
   const medsEndTimestamp = Math.max(
     medsStartTimestamp,
-    Number.isFinite(event.endTimestamp) ? event.endTimestamp : Date.now()
+    Number.isFinite(draftEndTimestamp)
+      ? draftEndTimestamp
+      : Number.isFinite(event.endTimestamp)
+        ? event.endTimestamp
+        : Date.now()
   );
   const medsDuration = formatDurationDaysHours(
     medsStartTimestamp,
@@ -944,8 +996,8 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, 
               <input
                 aria-label="Vybrať začiatok Meds"
                 type="datetime-local"
-                value={formatDateTimeInput(medsStartTimestamp)}
-                onChange={(e) => onSetMedsStart(event.id, e.target.value)}
+                value={startDraft}
+                onChange={(e) => setStartDraft(e.target.value)}
               />
             </label>
             <label className="meds-boundary">
@@ -954,8 +1006,8 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, 
                 aria-label="Vybrať koniec Meds"
                 type="datetime-local"
                 min={formatDateTimeInput(medsStartTimestamp)}
-                value={formatDateTimeInput(medsEndTimestamp)}
-                onChange={(e) => onSetMedsEnd(event.id, e.target.value)}
+                value={endDraft}
+                onChange={(e) => setEndDraft(e.target.value)}
               />
             </label>
           </div>
@@ -967,7 +1019,19 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, 
         <textarea value={draft} onChange={(e) => setDraft(e.target.value)} placeholder={placeholder} rows="3" />
       </label>
       <div className="actions activity-detail-actions">
-        <button className="btn btn-save" onClick={() => onSave(event.id, draft.trim())}>Save</button>
+        <button
+          className="btn btn-save"
+          onClick={() => onSave(
+            event.id,
+            draft.trim(),
+            isMeds ? {
+              start: startDraft,
+              end: endDraft || null
+            } : null
+          )}
+        >
+          Save
+        </button>
         <button className="btn btn-ghost" onClick={onCancel}>Cancel</button>
         <button className="btn btn-danger" onClick={() => onDelete(event.id)}>Zmazať</button>
       </div>
@@ -975,10 +1039,26 @@ function ActivityDetailEditor({ event, onAdjustTime, onSetTime, onSetMedsStart, 
   );
 }
 
-function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onSetMedsStart, onSetMedsEnd, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
+function Records({ events, allEvents, selectedDateKey, setSelectedDateKey, reviewEvent, onSaveDayReview, onAdjustTime, onSetTime, onAdjustMealStartTime, onSetMealStartTime, onAdjustDuration, onActivityDetail, onDelete, onExportCsv }) {
   const [filter, setFilter] = useState('all');
   const [openId, setOpenId] = useState(null);
   const recordEvents = events.filter(e => e.cat !== 'review');
+  const selectedDayStart = localDateFromKey(selectedDateKey).getTime();
+  const selectedDayEnd = localDateFromKey(addDaysToDateKey(selectedDateKey, 1)).getTime();
+  const spanningMeds = allEvents.filter((event) => {
+    if (event.sub !== 'meds' || recordEvents.some((record) => record.id === event.id)) return false;
+    const startTimestamp = eventSortValue(event);
+    const fallbackEnd = Number(event.duration) > 0
+      ? startTimestamp + (Number(event.duration) * 60000)
+      : startTimestamp;
+    const endTimestamp = event.running
+      ? Date.now()
+      : Number.isFinite(event.endTimestamp)
+        ? event.endTimestamp
+        : fallbackEnd;
+    return startTimestamp < selectedDayEnd && endTimestamp >= selectedDayStart;
+  });
+  const chartEvents = [...recordEvents, ...spanningMeds];
   const filters = [
     { id: 'all', label: 'All', match: () => true },
     { id: 'food', label: 'Food', match: (e) => e.cat === 'food' },
@@ -1005,7 +1085,7 @@ function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onS
         </div>
       </div>
 
-      <RecordsChart events={recordEvents} />
+      <RecordsChart events={chartEvents} selectedDateKey={selectedDateKey} />
 
       <div className="rec-filter">
         {filters.map((f) => {
@@ -1053,9 +1133,7 @@ function Records({ events, selectedDateKey, setSelectedDateKey, reviewEvent, onS
                 event={e}
                 onAdjustTime={onAdjustTime}
                 onSetTime={onSetTime}
-                onSetMedsStart={onSetMedsStart}
-                onSetMedsEnd={onSetMedsEnd}
-                onSave={(id, detail) => { onActivityDetail(id, detail); setOpenId(null); }}
+                onSave={(id, detail, intervalDraft) => { onActivityDetail(id, detail, intervalDraft); setOpenId(null); }}
                 onCancel={() => setOpenId(null)}
                 onDelete={(id) => { onDelete(id); setOpenId(null); }}
               />
@@ -1257,55 +1335,6 @@ function App() {
       return { ...e, hour: newHour, time: formatHour(newHour), timestamp, timestampLocal: formatLocalTimestamp(new Date(timestamp)) };
     }));
   };
-  const onSetMedsStart = (id, dateTimeValue) => {
-    const timestamp = timestampFromDateTimeInput(dateTimeValue);
-    if (!Number.isFinite(timestamp)) return;
-    setEvents(es => es.map(e => {
-      if (e.id !== id || e.sub !== 'meds') return e;
-      const date = new Date(timestamp);
-      const dateKey = formatLocalDateKey(date);
-      const hour = date.getHours() + (date.getMinutes() / 60);
-      const endTimestamp = Number.isFinite(e.endTimestamp) ? Math.max(timestamp, e.endTimestamp) : undefined;
-      const duration = Number.isFinite(endTimestamp) ? Math.max(0, Math.round((endTimestamp - timestamp) / 60000)) : e.duration;
-      const endDate = Number.isFinite(endTimestamp) ? new Date(endTimestamp) : null;
-      return {
-        ...e,
-        timestamp,
-        timestampLocal: formatLocalTimestamp(date),
-        dateKey,
-        startDateKey: dateKey,
-        time: formatHour(hour),
-        hour,
-        endTimestamp,
-        endTimestampLocal: endDate ? formatLocalTimestamp(endDate) : e.endTimestampLocal,
-        endDateKey: endDate ? formatLocalDateKey(endDate) : e.endDateKey,
-        endTime: endDate ? formatHour(endDate.getHours() + (endDate.getMinutes() / 60)) : e.endTime,
-        duration
-      };
-    }));
-    showToast(<>Začiatok Meds uložený</>);
-  };
-  const onSetMedsEnd = (id, dateTimeValue) => {
-    const requestedTimestamp = timestampFromDateTimeInput(dateTimeValue);
-    if (!Number.isFinite(requestedTimestamp)) return;
-    setEvents(es => es.map(e => {
-      if (e.id !== id || e.sub !== 'meds') return e;
-      const startTimestamp = eventSortValue(e);
-      const endTimestamp = Math.max(startTimestamp, requestedTimestamp);
-      const endDate = new Date(endTimestamp);
-      return {
-        ...e,
-        running: false,
-        ended: true,
-        duration: Math.max(0, Math.round((endTimestamp - startTimestamp) / 60000)),
-        endTimestamp,
-        endTimestampLocal: formatLocalTimestamp(endDate),
-        endDateKey: formatLocalDateKey(endDate),
-        endTime: formatHour(endDate.getHours() + (endDate.getMinutes() / 60))
-      };
-    }));
-    showToast(<>Koniec Meds uložený</>);
-  };
   const setMealStartForEvent = (event, mealStartHour) => {
     const timestamp = timestampFromDateKeyAndHour(event.dateKey, mealStartHour);
     return {
@@ -1337,12 +1366,43 @@ function App() {
       return { ...e, duration: Math.max(5, current + deltaMin) };
     }));
   };
-  const onActivityDetail = (id, activityDetail) => {
+  const onActivityDetail = (id, activityDetail, intervalDraft = null) => {
     setEvents(es => es.map(e => {
       if (e.id !== id || !['cannula', 'meds'].includes(e.sub)) return e;
-      return { ...e, activityDetail };
+      if (e.sub !== 'meds' || !intervalDraft) return { ...e, activityDetail };
+
+      const requestedStart = intervalDraft.start ? timestampFromDateTimeInput(intervalDraft.start) : null;
+      const startTimestamp = Number.isFinite(requestedStart) ? requestedStart : eventSortValue(e);
+      const startDate = new Date(startTimestamp);
+      const startHour = startDate.getHours() + (startDate.getMinutes() / 60);
+      const requestedEnd = intervalDraft.end ? timestampFromDateTimeInput(intervalDraft.end) : null;
+      const hasNewEnd = Number.isFinite(requestedEnd);
+      const endTimestamp = hasNewEnd
+        ? Math.max(startTimestamp, requestedEnd)
+        : Number.isFinite(e.endTimestamp)
+          ? Math.max(startTimestamp, e.endTimestamp)
+          : undefined;
+      const endDate = Number.isFinite(endTimestamp) ? new Date(endTimestamp) : null;
+
+      return {
+        ...e,
+        activityDetail,
+        timestamp: startTimestamp,
+        timestampLocal: formatLocalTimestamp(startDate),
+        dateKey: formatLocalDateKey(startDate),
+        startDateKey: formatLocalDateKey(startDate),
+        time: formatHour(startHour),
+        hour: startHour,
+        running: hasNewEnd ? false : e.running,
+        ended: hasNewEnd ? true : e.ended,
+        duration: endDate ? Math.max(0, Math.round((endTimestamp - startTimestamp) / 60000)) : e.duration,
+        endTimestamp,
+        endTimestampLocal: endDate ? formatLocalTimestamp(endDate) : e.endTimestampLocal,
+        endDateKey: endDate ? formatLocalDateKey(endDate) : e.endDateKey,
+        endTime: endDate ? formatHour(endDate.getHours() + (endDate.getMinutes() / 60)) : e.endTime
+      };
     }));
-    showToast(<>Detail uložený</>);
+    showToast(<>Zmeny uložené</>);
   };
   const onSaveDayReview = (dateKey, note) => {
     const text = String(note || '').trim();
@@ -1488,7 +1548,7 @@ function App() {
             onDismissAiResult={() => setAiResult(null)}
           />
         )}
-        {view === 'records' && <Records events={selectedEvents} selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onSetMedsStart={onSetMedsStart} onSetMedsEnd={onSetMedsEnd} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
+        {view === 'records' && <Records events={selectedEvents} allEvents={events} selectedDateKey={selectedDateKey} setSelectedDateKey={setSelectedDateKey} reviewEvent={selectedReviewEvent} onSaveDayReview={onSaveDayReview} onAdjustTime={onAdjustTime} onSetTime={onSetTime} onAdjustMealStartTime={onAdjustMealStartTime} onSetMealStartTime={onSetMealStartTime} onAdjustDuration={onAdjustDuration} onActivityDetail={onActivityDetail} onDelete={onDelete} onExportCsv={exportCsv}/>}
       </div>
 
       <div className="bottom-bar simple">
